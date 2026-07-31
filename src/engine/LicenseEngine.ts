@@ -32,6 +32,7 @@ export interface LicenseValidationResult {
 export interface GSheetClientRow {
   srNo: string;
   clientName: string;
+  firmName: string;
   role: UserRole;
   rawRole: string;
   email: string;
@@ -203,10 +204,11 @@ function parseCSV(text: string): string[][] {
 const SCHEMA_CONCEPTS: Record<string, string[]> = {
   sr_no:              ['sr. no', 'sr no', 'serial', '#', 'id'],
   client_name:        ['client name', 'client', 'name', 'college name', 'college', 'customer'],
+  firm_name:          ['firm name', 'firm', 'agency', 'company name', 'store name'],
   role:               ['role', 'user role', 'stakeholder', 'type', 'category'],
   email:              ['email', 'e-mail', 'mail'],
   contact:            ['contact', 'phone', 'mobile', 'contact no'],
-  license_key:        ['license key', 'license', 'key', 'activation', 'licence'],
+  license_key:        ['app license key', 'license key', 'license', 'key', 'activation', 'licence'],
   city:               ['city', 'location', 'place', 'address'],
   mspc_reg_no:        ['mspc reg', 'mspc', 'registration'],
   pharmacist_license: ['pharmacist license', 'pharmacist', 'dl number', 'drug license'],
@@ -290,6 +292,7 @@ export async function validateAgainstGSheet(key: string): Promise<{
             clientRow: {
               srNo: val(row, 'sr_no'),
               clientName: val(row, 'client_name') || 'Valued Client',
+              firmName: val(row, 'firm_name') || '',
               role: normalizeRole(rawRole),
               rawRole: rawRole || 'Retailer',
               email: val(row, 'email'),
@@ -316,6 +319,7 @@ export async function validateAgainstGSheet(key: string): Promise<{
         clientRow: {
           srNo: val(firstRow, 'sr_no') || '1',
           clientName: val(firstRow, 'client_name') || localResult.entityName || 'RxFlow Client',
+          firmName: val(firstRow, 'firm_name') || '',
           role: normalizeRole(rawRole),
           rawRole: rawRole,
           email: val(firstRow, 'email') || 'client@rxflow.in',

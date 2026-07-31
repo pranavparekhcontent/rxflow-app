@@ -52,15 +52,21 @@ export default function LandingView(container: HTMLElement): void {
         <!-- Left Side: Registration Form -->
         <div class="rx-card rx-card--form">
           <div class="rx-card__header">
-            <div class="rx-card__title">📝 New Client Registration</div>
+            <div class="rx-card__title">📝 New Client Add (Get License Key)</div>
             <div class="rx-card__sub">Register your pharmacy, stockist agency or manufacturing unit</div>
           </div>
 
           <form id="rx-reg-form" class="rx-form">
-            <!-- Client Name -->
-            <div class="rx-form__group">
-              <label class="rx-form__label">Client / Store / Company Name <span class="req">*</span></label>
-              <input type="text" id="reg-client-name" class="rx-form__input" placeholder="e.g. DEMO Chemist / Stockist Agencies" required>
+            <!-- Client Name & Firm Name -->
+            <div class="rx-form__row">
+              <div class="rx-form__group">
+                <label class="rx-form__label">Client Name <span class="req">*</span></label>
+                <input type="text" id="reg-client-name" class="rx-form__input" placeholder="e.g. DEMO R" required>
+              </div>
+              <div class="rx-form__group">
+                <label class="rx-form__label">Firm / Store Name <span class="req">*</span></label>
+                <input type="text" id="reg-firm-name" class="rx-form__input" placeholder="e.g. Royal Medical / Agency" required>
+              </div>
             </div>
 
             <!-- Role Dropdown -->
@@ -141,7 +147,7 @@ export default function LandingView(container: HTMLElement): void {
               <div class="rx-step__num">2</div>
               <div class="rx-step__body">
                 <strong>Admin MSPC & DL Verification</strong>
-                <p>Admin verifies your MSPC registration / Drug License and issues your 10-digit Base72 License Key in the Master Google Sheet.</p>
+                <p>Admin verifies your MSPC registration / Drug License and issues your 10-digit License Key.</p>
               </div>
             </div>
 
@@ -207,6 +213,7 @@ export default function LandingView(container: HTMLElement): void {
     e.preventDefault();
 
     const clientName = (container.querySelector('#reg-client-name') as HTMLInputElement).value.trim();
+    const firmName = (container.querySelector('#reg-firm-name') as HTMLInputElement).value.trim();
     const role = roleSelect.value;
     const email = (container.querySelector('#reg-email') as HTMLInputElement).value.trim();
     const contact = (container.querySelector('#reg-contact') as HTMLInputElement).value.trim();
@@ -227,9 +234,10 @@ export default function LandingView(container: HTMLElement): void {
 
     // Prepare payload to send email to pranavparekhcontent@gmail.com
     const payload = {
-      _subject: `New RxFlow Registration Request: ${clientName} (${role.toUpperCase()})`,
+      _subject: `New RxFlow Registration Request: ${clientName} / ${firmName} (${role.toUpperCase()})`,
       to_email: 'pranavparekhcontent@gmail.com',
       client_name: clientName,
+      firm_name: firmName,
       role: role,
       email: email,
       contact: contact,

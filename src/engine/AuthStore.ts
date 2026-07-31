@@ -141,6 +141,25 @@ class AuthStoreEngine {
     window.location.hash = '#/login';
   }
 
+  /**
+   * Clear session without hash navigation (used by AppStart license guard)
+   */
+  public logoutWithoutRedirect(): void {
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem(STORAGE_KEYS.POWERSYNC_TOKEN);
+
+    this.state = {
+      isAuthenticated: false,
+      user: null,
+      token: null,
+      powersyncToken: null,
+      isLoading: false,
+    };
+    this.notify();
+  }
+
   // ---------- Private Helpers ----------
 
   private restoreSession(): void {

@@ -91,8 +91,21 @@ export function setCurrentRole(role: UserRole): void {
   navigate(`#/${role === 'sales_rep' ? 'sales' : role === 'platform_admin' ? 'admin' : role}/home`);
 }
 
+import { LicenseEngine } from './LicenseEngine';
+
 async function handleRouteChange(): Promise<void> {
   const hash = window.location.hash || '#/login';
+
+  // MANDATORY APPSTART LICENSE GUARD:
+  // If license key is NOT verified, block ALL routes and force navigation to #/login
+  const activeLic = LicenseEngine.getActiveLicense();
+  if (!activeLic.validation.ok) {
+    if (hash !== '#/login') {
+      window.location.hash = '#/login';
+      return;
+    }
+  }
+
   state.currentPath = hash;
 
   const container = document.getElementById('app-view');

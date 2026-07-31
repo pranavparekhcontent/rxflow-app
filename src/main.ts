@@ -22,9 +22,11 @@ function toggleTheme(): void {
   localStorage.setItem('rxflow-theme', next);
 }
 
+import { LicenseEngine } from './engine/LicenseEngine';
+
 // ---------- App Initialization ----------
 
-function init(): void {
+async function init(): Promise<void> {
   initTheme();
 
   // Render app shell without top horizontal nav bar
@@ -68,17 +70,27 @@ function init(): void {
     }
   });
 
-  // Hide header until user logs in (login page manages visibility)
-  const authState = AuthStore.getState();
-  if (!authState.isAuthenticated) {
+  // 1. Initialize LicenseEngine FIRST
+  const licStatus = await LicenseEngine.init();
+
+  // If license is NOT verified, clear stale auth session & force header hidden
+  if (!licStatus.ok) {
+    AuthStore.logoutWithoutRedirect();
     const header = document.getElementById('app-header');
     if (header) header.style.display = 'none';
+  } else {
+    // Hide header if not logged in
+    const authState = AuthStore.getState();
+    if (!authState.isAuthenticated) {
+      const header = document.getElementById('app-header');
+      if (header) header.style.display = 'none';
+    }
   }
 
-  // Initialize AppStartEngine & Dev Drawer
+  // 2. Initialize AppStartEngine & Dev Drawer
   AppStartEngine.init();
 
-  // Initialize router
+  // 3. Initialize router
   initRouter();
 }
 

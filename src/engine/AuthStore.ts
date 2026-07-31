@@ -189,11 +189,11 @@ class AuthStoreEngine {
 
   private getDemoName(role: UserRole): string {
     const names: Record<UserRole, string> = {
-      retailer: 'Rajesh Medical Store (Pune)',
-      distributor: 'Shrine Pharma Stockist (Pune)',
-      manufacturer: 'GSK Pharma Ltd (MH)',
-      sales_rep: 'Vikram Joshi (MR — Pune East)',
-      platform_admin: 'RxFlow Compliance Admin',
+      retailer: 'Retailer R1 (Pharma Medicals)',
+      distributor: 'Distributor D1 (Stockist Agencies)',
+      manufacturer: 'Manufacturer M1 (Pharma Labs Ltd)',
+      sales_rep: 'SalesRep S1 (Field Exec)',
+      platform_admin: 'Platform Admin (RxFlow Governance)',
     };
     return names[role] || 'RxFlow User';
   }

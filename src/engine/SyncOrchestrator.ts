@@ -4,6 +4,8 @@
  * Manages local tables, offline mutation queue, FTS5 fallback search index, and sync telemetry.
  */
 
+import { PRODUCTS } from '../data/mockDataStore';
+
 export type SyncStatus = 'connected' | 'connecting' | 'offline' | 'syncing' | 'error';
 
 export interface SyncTelemetry {
@@ -119,23 +121,22 @@ class SyncOrchestratorEngine {
   /**
    * Search local SQLite catalogue using FTS5 or fallback normalized search_text
    */
-  public searchLocalProducts(query: string): Array<{ sku: string; brand_name: string; generic_salt: string; mrp: number; ptr: number }> {
+  public searchLocalProducts(query: string): Array<{ sku: string; brand_name: string; generic_salt: string; mrp: number; ptr: number; is_schedule_x?: boolean; is_schedule_h1?: boolean; scheme_tag?: string }> {
     const cleanQuery = query.toLowerCase().trim();
-    if (!cleanQuery) return [];
+    const dataset = PRODUCTS.map(p => ({
+      sku: p.sku,
+      brand_name: p.brandName,
+      generic_salt: p.genericSalt,
+      mrp: p.mrp,
+      ptr: p.ptr,
+      is_schedule_x: p.isScheduleX,
+      is_schedule_h1: p.isScheduleH1,
+      scheme_tag: p.schemeTag,
+    }));
 
-    // Local in-memory mock SQLite dataset (Phase 3 will query PowerSync WASM DB)
-    const mockDataset = [
-      { sku: 'AUG625', brand_name: 'Augmentin 625 Duo Tablet', generic_salt: 'amoxycillin clavulanic acid', mrp: 201.71, ptr: 142.50 },
-      { sku: 'PAND', brand_name: 'Pan-D Capsule', generic_salt: 'pantoprazole domperidone', mrp: 156.00, ptr: 88.00 },
-      { sku: 'DOLO650', brand_name: 'Dolo 650 Tablet', generic_salt: 'paracetamol 650mg', mrp: 34.00, ptr: 26.80 },
-      { sku: 'ALP05', brand_name: 'Alprazolam 0.5mg (Alprax)', generic_salt: 'alprazolam anxiolytic', mrp: 58.00, ptr: 42.10 },
-      { sku: 'AZEE500', brand_name: 'Azee 500 Tablet', generic_salt: 'azithromycin 500mg', mrp: 132.00, ptr: 105.00 },
-      { sku: 'AZI250', brand_name: 'Azithral 250 Tablet', generic_salt: 'azithromycin 250mg', mrp: 72.00, ptr: 58.00 },
-      { sku: 'CAL500', brand_name: 'Shelcal 500 Tablet', generic_salt: 'calcium vitamin d3', mrp: 140.00, ptr: 110.00 },
-      { sku: 'CRO500', brand_name: 'Crocin Advance 500', generic_salt: 'paracetamol 500mg', mrp: 22.00, ptr: 18.00 },
-    ];
+    if (!cleanQuery || cleanQuery === 'a') return dataset;
 
-    return mockDataset.filter(item =>
+    return dataset.filter(item =>
       item.brand_name.toLowerCase().includes(cleanQuery) ||
       item.generic_salt.toLowerCase().includes(cleanQuery) ||
       item.sku.toLowerCase().includes(cleanQuery)

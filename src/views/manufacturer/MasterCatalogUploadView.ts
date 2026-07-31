@@ -1,59 +1,70 @@
 /**
- * Mediflow MasterCatalogUploadView v3.0
- * Web Streams API chunk-processing for 10,000+ SKU CSV catalog uploads with Zod validation & UUIDv7 IDs.
+ * RxFlow MasterCatalogUploadView v3.0
+ * Manufacturers M1 to M10 Master Catalog CSV upload & management interface.
  */
 
 import { NotificationEngine } from '../../engine/NotificationEngine';
+import { MANUFACTURERS, MANUFACTURER_CATALOGS } from '../../data/mockDataStore';
 
 export default function MasterCatalogUploadView(container: HTMLElement): void {
-  let uploadedCount = 0;
+  let selectedMfg = MANUFACTURERS[0];
   let isUploading = false;
+  let uploadedCount = 0;
 
   function render(): void {
+    const currentCatalog = MANUFACTURER_CATALOGS.find(c => c.manufacturer.id === selectedMfg.id) || MANUFACTURER_CATALOGS[0];
+
     container.innerHTML = `
-      <div class="section-title">📋 master catalog CSV upload (10,000+ SKUs)</div>
+      <div class="section-title">📋 Master Catalogs & CSV Upload (Manufacturers M1-M10)</div>
+
+      <!-- Manufacturer Selector -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;">
+        <span style="font-size:12px;color:#aaa;">Select Manufacturer:</span>
+        <select id="mfg-select" style="background:#222;color:white;border:1px solid #444;padding:6px 12px;border-radius:6px;font-size:12px;">
+          ${MANUFACTURERS.map(m => `<option value="${m.id}" ${m.id === selectedMfg.id ? 'selected' : ''}>${m.name} (${m.code})</option>`).join('')}
+        </select>
+      </div>
 
       <!-- Upload Zone Card -->
-      <div style="background:var(--bg-card);border:2px dashed var(--border-active);border-radius:var(--tile-radius);padding:32px;text-align:center;margin-bottom:20px;">
-        <div style="font-size:48px;margin-bottom:12px;">📁</div>
-        <div style="font-size:16px;font-weight:700;margin-bottom:6px;">Drag & Drop Catalog CSV File</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">
-          Supports up to 50,000 rows • Processed in 1,000-row chunks using Web Streams API
+      <div style="background:var(--bg-card);border:2px dashed var(--border-active);border-radius:var(--tile-radius);padding:24px;text-align:center;margin-bottom:20px;">
+        <div style="font-size:40px;margin-bottom:8px;">📁</div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Upload Catalog for ${selectedMfg.name}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;">
+          Supports CSV upload • Validated with Zod schema for Brands B1-B30 & Generic Salts
         </div>
 
         <input type="file" id="csv-file-input" accept=".csv" style="display:none;">
-        <button class="action-btn action-btn--primary" id="btn-select-file" style="max-width:220px;margin:0 auto;">
+        <button class="action-btn action-btn--primary" id="btn-select-file" style="max-width:220px;margin:0 auto;padding:8px 16px;">
           📂 Select CSV File
         </button>
-
-        <div style="margin-top:12px;font-size:10px;color:var(--tile-cyan);">
-          ⚡ Validation: Zod schema (SKU, brand, salt, MRP, PTR, PTS, HSN, Schedule tags, NPPA ceiling)
-        </div>
       </div>
 
       ${isUploading ? `
         <div style="background:var(--bg-elevated);padding:16px;border-radius:var(--tile-radius);margin-bottom:20px;">
           <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:6px;">
-            <span>Processing Web Stream Chunks...</span>
-            <span>${uploadedCount} / 10,000 SKUs</span>
+            <span>Processing Catalog Chunks for ${selectedMfg.code}...</span>
+            <span>${uploadedCount} / 30 SKUs</span>
           </div>
           <div class="tile-bar-bg" style="height:8px;">
-            <div class="tile-bar-fill" style="width:${(uploadedCount / 100).toFixed(0)}%;"></div>
+            <div class="tile-bar-fill" style="width:${((uploadedCount / 30) * 100).toFixed(0)}%;"></div>
           </div>
         </div>
       ` : ''}
 
-      <!-- Template Format Note -->
+      <!-- Current Active Catalogs List -->
+      <div class="section-title" style="margin-top:20px;margin-bottom:10px;">Existing Master Catalogs (M1-M10)</div>
       <div class="metro-list">
-        <div class="metro-item metro-item--teal">
-          <div class="item-main">
-            <div class="item-title">Expected CSV Columns</div>
-            <div class="item-sub">sku, brand_name, generic_salt, dosage_form, pack_size, hsn_code, mrp, ptr, pts, nppa_ceiling_price, is_schedule_h1, is_schedule_x</div>
+        ${MANUFACTURER_CATALOGS.map(cat => `
+          <div class="metro-item metro-item--teal">
+            <div class="item-main">
+              <div class="item-title">${cat.catalogName}</div>
+              <div class="item-sub">${cat.manufacturer.name} • ${cat.productsCount} SKUs Configured</div>
+            </div>
+            <button class="action-btn test-cat-btn" data-mfg="${cat.manufacturer.id}" style="padding:6px 12px;font-size:11px;">
+              ⚡ Run Upload
+            </button>
           </div>
-          <button class="action-btn" id="btn-demo-upload" style="padding:8px 14px;font-size:11px;">
-            ⚡ Run Demo Upload
-          </button>
-        </div>
+        `).join('')}
       </div>
     `;
 
@@ -61,13 +72,22 @@ export default function MasterCatalogUploadView(container: HTMLElement): void {
   }
 
   function attachEvents(): void {
-    const fileInput = container.querySelector('#csv-file-input') as HTMLInputElement;
-    const selectBtn = container.querySelector('#btn-select-file');
-    const demoBtn = container.querySelector('#btn-demo-upload');
+    const select = container.querySelector('#mfg-select') as HTMLSelectElement;
+    select?.addEventListener('change', (e) => {
+      const id = (e.target as HTMLSelectElement).value;
+      selectedMfg = MANUFACTURERS.find(m => m.id === id) || MANUFACTURERS[0];
+      render();
+    });
 
-    selectBtn?.addEventListener('click', () => fileInput?.click());
-    fileInput?.addEventListener('change', () => startChunkedUpload());
-    demoBtn?.addEventListener('click', () => startChunkedUpload());
+    container.querySelector('#btn-select-file')?.addEventListener('click', () => startChunkedUpload());
+
+    container.querySelectorAll('.test-cat-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mfgId = (e.currentTarget as HTMLElement).getAttribute('data-mfg');
+        selectedMfg = MANUFACTURERS.find(m => m.id === mfgId) || selectedMfg;
+        startChunkedUpload();
+      });
+    });
   }
 
   function startChunkedUpload(): void {
@@ -75,16 +95,15 @@ export default function MasterCatalogUploadView(container: HTMLElement): void {
     uploadedCount = 0;
     render();
 
-    // Simulate Web Streams chunk processing
     const interval = setInterval(() => {
-      uploadedCount += 2500;
+      uploadedCount += 10;
       render();
 
-      if (uploadedCount >= 10000) {
+      if (uploadedCount >= 30) {
         clearInterval(interval);
         isUploading = false;
         render();
-        NotificationEngine.showToast('📋 Successfully uploaded 10,000 SKUs to Master Catalog with UUIDv7 IDs!', 'success');
+        NotificationEngine.showToast(`📋 Successfully uploaded 30 SKUs to ${selectedMfg.name} Master Catalog!`, 'success');
       }
     }, 400);
   }

@@ -1,12 +1,12 @@
 /**
- * RxFlow LicenseEngine v3.0
+ * RxFlow LicenseEngine v4.0
  * Ported from DEV TOOLS / appstart (license.js & keystore.js) & pharma_keygen.html.
  * 
  * Features:
- * - 10-digit Base72 license key encoder & decoder
- * - 6-bit checksum XOR signature verification
- * - 40-bit entity name + 15-bit expiry date payload
+ * - 10-digit Base72 license key decoder & checksum validator
+ * - Google Sheet CSV remote key validation (primary gate)
  * - 3-Layer KeyStore persistence (Cookie + IndexedDB + localStorage)
+ * - NO key generator (removed — keys are generated externally via pharma_keygen.html)
  */
 
 // ---------- 10-Digit Base72 License Core ----------
@@ -15,30 +15,36 @@ const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 const BASE = BigInt(ALPHABET.length); // 72
 const NAME_CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZ. -"; // 30 char lookup
 
+// Hardcoded Google Sheet URL for license validation
+const GSHEET_CSV_URL =
+  "https://docs.google.com/spreadsheets/d/1EZDfaM1PCVyqOoxAuy0iidKSJv31ifc5GIbz204sjJM/gviz/tq?tqx=out:csv";
+
 export interface LicenseValidationResult {
   ok: boolean;
-  reason?: 'invalid' | 'expired' | 'missing';
+  reason?: 'invalid' | 'expired' | 'missing' | 'not_found' | 'network_error';
   entityName?: string;
   expiryDate?: Date;
   daysLeft?: number;
   message?: string;
 }
 
+export interface GSheetClientRow {
+  srNo: string;
+  clientName: string;
+  role: string;
+  email: string;
+  contact: string;
+  licenseKey: string;
+  city: string;
+  mspcRegNo: string;
+  pharmacistLicense: string;
+  pin: string;
+}
+
 export interface LicenseKeyDetails {
   key: string;
   entityName: string;
   expiryDate: Date;
-}
-
-function encodeName(name: string): bigint {
-  let val = 0n;
-  const clean = name.toUpperCase().padEnd(8, ' ').slice(0, 8);
-  for (let i = 0; i < 8; i++) {
-    let charIdx = NAME_CHARS.indexOf(clean[i]);
-    if (charIdx === -1) charIdx = 0;
-    val = (val << 5n) | BigInt(charIdx);
-  }
-  return val; // 40 bits
 }
 
 function decodeName(val: bigint): string {
@@ -88,7 +94,7 @@ export function decodeLicenseKey(key: string): { entityName: string; expiryDate:
 }
 
 /**
- * Validate a 10-digit Base72 key (checks checksum & expiry).
+ * Validate a 10-digit Base72 key locally (checks checksum & expiry).
  */
 export function validateLicenseKey(key: string): LicenseValidationResult {
   try {
@@ -125,32 +131,143 @@ export function validateLicenseKey(key: string): LicenseValidationResult {
   }
 }
 
+// ---------- Google Sheet CSV Validation ----------
+
 /**
- * Generate a 10-digit Base72 key for an entity name and expiry date.
+ * Parse CSV text into rows of string arrays (handles quoted values).
  */
-export function generateLicenseKey(entityName: string, expiryDate: Date): string {
-  if (!entityName || entityName.trim().length === 0) {
-    throw new Error('Entity name is required');
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = [];
+  const lines = text.split(/\r?\n/);
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const cells: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"' && line[i + 1] === '"') { current += '"'; i++; }
+      else if (char === '"') { inQuotes = !inQuotes; }
+      else if (char === ',' && !inQuotes) { cells.push(current.trim()); current = ''; }
+      else { current += char; }
+    }
+    cells.push(current.trim());
+    rows.push(cells);
+  }
+  return rows;
+}
+
+/**
+ * Smart column detection — matches header text against keyword patterns.
+ * Column order doesn't matter.
+ */
+const COLUMN_KEYWORDS: Record<string, string[]> = {
+  sr_no:              ['sr. no', 'sr no', 'serial', '#'],
+  client_name:        ['client name', 'client', 'name', 'college name', 'college'],
+  role:               ['role', 'user role', 'type'],
+  email:              ['email', 'e-mail', 'mail'],
+  contact:            ['contact', 'phone', 'mobile', 'contact no'],
+  license_key:        ['license key', 'license', 'key', 'activation', 'licence'],
+  city:               ['city', 'location', 'place'],
+  mspc_reg_no:        ['mspc reg', 'mspc', 'registration'],
+  pharmacist_license: ['pharmacist license', 'pharmacist', 'dl number', 'drug license'],
+  pin:                ['pin', 'password', 'passcode'],
+};
+
+function buildColumnMap(headerRow: string[]): Record<string, number> {
+  const headers = headerRow.map(h => h.toLowerCase().trim());
+  const colMap: Record<string, number> = {};
+
+  for (const [field, keywords] of Object.entries(COLUMN_KEYWORDS)) {
+    // Sort keywords longest-first so specific matches win
+    const sorted = [...keywords].sort((a, b) => b.length - a.length);
+    for (const kw of sorted) {
+      const idx = headers.findIndex(h => h.includes(kw));
+      if (idx !== -1) {
+        colMap[field] = idx;
+        break;
+      }
+    }
   }
 
-  const year = BigInt(expiryDate.getFullYear() - 2024) & 63n;
-  const month = BigInt(expiryDate.getMonth() + 1) & 15n;
-  const day = BigInt(expiryDate.getDate()) & 31n;
-  const datePart = (year << 9n) | (month << 5n) | day; // 15 bits
+  return colMap;
+}
 
-  const namePart = encodeName(entityName); // 40 bits
-  const data = (datePart << 40n) | namePart; // 55 bits
+/**
+ * Fetch Google Sheet CSV and validate the key against the License Key column.
+ * Returns the matched row data or a failure result.
+ */
+export async function validateAgainstGSheet(key: string): Promise<{
+  ok: boolean;
+  reason?: string;
+  message?: string;
+  clientRow?: GSheetClientRow;
+}> {
+  try {
+    const cacheBust = `&t=${Date.now()}`;
+    const response = await fetch(GSHEET_CSV_URL + cacheBust, { 
+      mode: 'cors',
+      cache: 'no-store',
+    });
 
-  const checksum = (data ^ 0x5B5B5B5Bn) % 64n; // 6 bits
-  let combined = (checksum << 55n) | data; // 61 bits
+    if (!response.ok) {
+      throw new Error(`Sheet fetch failed: HTTP ${response.status}`);
+    }
 
-  let key = "";
-  for (let i = 0; i < 10; i++) {
-    key = ALPHABET[Number(combined % BASE)] + key;
-    combined /= BASE;
+    const csvText = await response.text();
+    const rows = parseCSV(csvText);
+
+    if (rows.length < 2) {
+      return { ok: false, reason: 'empty_sheet', message: 'License registry is empty.' };
+    }
+
+    // Detect header row (first row with 3+ text columns)
+    let headerIdx = 0;
+    for (let i = 0; i < Math.min(rows.length, 5); i++) {
+      const textCount = rows[i].filter(c => c && isNaN(Number(c))).length;
+      if (textCount >= 3) {
+        headerIdx = i;
+        break;
+      }
+    }
+
+    const colMap = buildColumnMap(rows[headerIdx]);
+
+    if (colMap.license_key === undefined) {
+      return { ok: false, reason: 'no_key_column', message: 'License Key column not found in registry.' };
+    }
+
+    // Search data rows for matching key
+    const trimmedKey = key.trim();
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      const sheetKey = (row[colMap.license_key] || '').trim();
+
+      if (sheetKey && sheetKey === trimmedKey) {
+        const v = (field: string) => (row[colMap[field]] || '').trim();
+        return {
+          ok: true,
+          clientRow: {
+            srNo: v('sr_no'),
+            clientName: v('client_name'),
+            role: v('role'),
+            email: v('email'),
+            contact: v('contact'),
+            licenseKey: v('license_key'),
+            city: v('city'),
+            mspcRegNo: v('mspc_reg_no'),
+            pharmacistLicense: v('pharmacist_license'),
+            pin: v('pin'),
+          },
+        };
+      }
+    }
+
+    return { ok: false, reason: 'not_found', message: 'License key not found in registry. Contact your administrator.' };
+  } catch (err: any) {
+    console.warn('[LicenseEngine] GSheet validation failed:', err);
+    return { ok: false, reason: 'network_error', message: err.message || 'Failed to connect to license registry.' };
   }
-
-  return key;
 }
 
 // ---------- Multi-Layer KeyStore (Cookie + IDB + LocalStorage) ----------
@@ -280,6 +397,7 @@ export const KeyStore = new KeyStoreEngine();
 class LicenseEngineService {
   private activeLicenseKey: string | null = null;
   private activeValidation: LicenseValidationResult = { ok: false, reason: 'missing' };
+  private activeClientRow: GSheetClientRow | null = null;
 
   public async init(): Promise<LicenseValidationResult> {
     const savedKey = await KeyStore.load();
@@ -289,14 +407,38 @@ class LicenseEngineService {
     return this.activeValidation;
   }
 
+  /**
+   * Activate a license key — validates locally (Base72 checksum + expiry)
+   * and optionally against Google Sheet if online.
+   */
   public async activateLicense(key: string): Promise<LicenseValidationResult> {
-    const result = validateLicenseKey(key);
-    if (result.ok) {
+    // Step 1: Local Base72 decode + expiry validation
+    const localResult = validateLicenseKey(key);
+
+    if (localResult.ok) {
       this.activeLicenseKey = key;
-      this.activeValidation = result;
+      this.activeValidation = localResult;
       await KeyStore.save(key);
     } else {
-      this.activeValidation = result;
+      this.activeValidation = localResult;
+    }
+
+    return localResult;
+  }
+
+  /**
+   * Validate against Google Sheet — checks if the key exists in the remote registry.
+   * This is the primary gate for new activations.
+   */
+  public async validateRemote(key: string): Promise<{
+    ok: boolean;
+    reason?: string;
+    message?: string;
+    clientRow?: GSheetClientRow;
+  }> {
+    const result = await validateAgainstGSheet(key);
+    if (result.ok && result.clientRow) {
+      this.activeClientRow = result.clientRow;
     }
     return result;
   }
@@ -308,16 +450,15 @@ class LicenseEngineService {
     };
   }
 
+  public getActiveClientRow(): GSheetClientRow | null {
+    return this.activeClientRow ? { ...this.activeClientRow } : null;
+  }
+
   public async clearLicense(): Promise<void> {
     this.activeLicenseKey = null;
     this.activeValidation = { ok: false, reason: 'missing' };
+    this.activeClientRow = null;
     await KeyStore.clear();
-  }
-
-  public generateDemoKey(entityName: string = 'RXFLOW'): string {
-    const oneYearFromNow = new Date();
-    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-    return generateLicenseKey(entityName, oneYearFromNow);
   }
 }
 

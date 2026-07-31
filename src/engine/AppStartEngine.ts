@@ -253,7 +253,6 @@ class AppStartEngineService {
 
         <!-- Actions -->
         <div style="display:flex;flex-direction:column;gap:6px;">
-          <button id="dev-keygen-btn" style="padding:8px;font-size:11px;font-weight:700;background:#107C41;color:white;border:none;border-radius:4px;cursor:pointer;">🔑 Generate 10-Digit Base72 Key</button>
           <button id="dev-ping-btn" style="padding:8px;font-size:11px;font-weight:700;background:#D83B01;color:white;border:none;border-radius:4px;cursor:pointer;">📡 Heartbeat Ping Check</button>
           <button id="dev-license-btn" style="padding:8px;font-size:11px;font-weight:700;background:#5C2D91;color:white;border:none;border-radius:4px;cursor:pointer;">🛡️ Verify & Restore License</button>
           <button id="dev-push-btn" style="padding:8px;font-size:11px;font-weight:700;background:#0078D7;color:white;border:none;border-radius:4px;cursor:pointer;">🔔 Test VAPID Push Notification</button>
@@ -307,22 +306,7 @@ class AppStartEngineService {
       });
     });
 
-    // KeyGen button
-    drawer.querySelector('#dev-keygen-btn')?.addEventListener('click', async () => {
-      const user = AuthStore.getState().user;
-      const entity = user ? user.fullName.slice(0, 8) : 'RXFLOW';
-      const key = LicenseEngine.generateDemoKey(entity);
-      const act = await LicenseEngine.activateLicense(key);
-
-      if (act.ok) {
-        NotificationEngine.showToast(
-          `🔑 KeyGen: Generated 10-Digit Key [${key}] for "${act.entityName}" (${act.daysLeft}d left)`,
-          'success'
-        );
-      } else {
-        NotificationEngine.showToast(`🔑 KeyGen failed: ${act.message}`, 'error');
-      }
-    });
+    // KeyGen button removed — keys generated externally via pharma_keygen.html
 
     // Heartbeat Ping button
     drawer.querySelector('#dev-ping-btn')?.addEventListener('click', async () => {

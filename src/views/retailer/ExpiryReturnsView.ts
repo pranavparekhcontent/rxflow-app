@@ -1,10 +1,11 @@
 /**
- * Mediflow Expiry & Returns View v3.0
- * Photo-verified damaged & near-expiry medicine returns processing module.
+ * RxFlow Expiry & Returns View v3.0
+ * Photo-verified damaged & near-expiry medicine returns processing module for Brands B1..B30.
  */
 
 import { NotificationEngine } from '../../engine/NotificationEngine';
 import { SyncOrchestrator } from '../../engine/SyncOrchestrator';
+import { PRODUCTS } from '../../data/mockDataStore';
 
 interface ReturnItem {
   id: string;
@@ -22,23 +23,23 @@ export default function ExpiryReturnsView(container: HTMLElement): void {
   const returnList: ReturnItem[] = [
     {
       id: 'ret-101',
-      sku: 'AUG625',
-      brandName: 'Augmentin 625 Duo Tablet',
-      batchNo: 'BT-8849A',
+      sku: PRODUCTS[0].sku,
+      brandName: PRODUCTS[0].brandName,
+      batchNo: 'BCH-2026-101',
       expiryDate: '10/2026',
       qty: 3,
-      ptr: 142.50,
+      ptr: PRODUCTS[0].ptr,
       reason: 'Damaged Packaging',
       photoUploaded: true,
     },
     {
       id: 'ret-102',
-      sku: 'AZI250',
-      brandName: 'Azithral 250 Tablet',
-      batchNo: 'AZ-1102C',
+      sku: PRODUCTS[1].sku,
+      brandName: PRODUCTS[1].brandName,
+      batchNo: 'BCH-2026-102',
       expiryDate: '08/2026',
       qty: 5,
-      ptr: 58.00,
+      ptr: PRODUCTS[1].ptr,
       reason: 'Expired Stock',
       photoUploaded: true,
     }
@@ -48,7 +49,7 @@ export default function ExpiryReturnsView(container: HTMLElement): void {
     const totalCreditEstimate = returnList.reduce((sum, item) => sum + (item.qty * item.ptr), 0);
 
     container.innerHTML = `
-      <div class="section-title">Expiry & Damaged Stock Returns</div>
+      <div class="section-title">Expiry & Damaged Stock Returns (Brands B1-B30)</div>
       
       <!-- Summary Bar -->
       <div class="metro-card flex justify-between items-center mb-md" style="border-left: 4px solid var(--accent-orange);">
@@ -69,10 +70,9 @@ export default function ExpiryReturnsView(container: HTMLElement): void {
           <div>
             <label style="font-size:11px;color:var(--text-muted);">Brand / Medicine</label>
             <select id="ret-sku-select" class="metro-input" style="width:100%;margin-top:4px;">
-              <option value="AUG625|Augmentin 625 Duo|142.50">Augmentin 625 Duo (PTR ₹142.50)</option>
-              <option value="PAND|Pan-D Capsule|88.00">Pan-D Capsule (PTR ₹88.00)</option>
-              <option value="DOLO650|Dolo 650 Tablet|26.80">Dolo 650 Tablet (PTR ₹26.80)</option>
-              <option value="CRO500|Crocin Advance|18.00">Crocin Advance (PTR ₹18.00)</option>
+              ${PRODUCTS.slice(0, 10).map(p => `
+                <option value="${p.sku}|${p.brandName}|${p.ptr}">${p.brandName} (${p.sku} • PTR ₹${p.ptr.toFixed(2)})</option>
+              `).join('')}
             </select>
           </div>
           <div>
@@ -89,7 +89,7 @@ export default function ExpiryReturnsView(container: HTMLElement): void {
         <div class="grid grid-cols-3 gap-sm mb-md">
           <div>
             <label style="font-size:11px;color:var(--text-muted);">Batch No.</label>
-            <input type="text" id="ret-batch" class="metro-input" placeholder="e.g. B-9932" value="B-8831" style="width:100%;margin-top:4px;">
+            <input type="text" id="ret-batch" class="metro-input" placeholder="e.g. B-9932" value="BCH-2026-103" style="width:100%;margin-top:4px;">
           </div>
           <div>
             <label style="font-size:11px;color:var(--text-muted);">Expiry Date</label>
@@ -160,7 +160,7 @@ export default function ExpiryReturnsView(container: HTMLElement): void {
       const [sku, brandName, ptrStr] = selectVal.split('|');
       const ptr = parseFloat(ptrStr);
       const reason = (container.querySelector('#ret-reason-select') as HTMLSelectElement).value as any;
-      const batchNo = (container.querySelector('#ret-batch') as HTMLInputElement).value || 'B-1001';
+      const batchNo = (container.querySelector('#ret-batch') as HTMLInputElement).value || 'BCH-2026-103';
       const expiryDate = (container.querySelector('#ret-expiry') as HTMLInputElement).value || '12/2026';
       const qty = parseInt((container.querySelector('#ret-qty') as HTMLInputElement).value, 10) || 1;
 

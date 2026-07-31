@@ -1,9 +1,10 @@
 /**
- * Mediflow RetailerPaymentReminders v3.0
- * Overdue & due bill alerts with 1-tap UPI payment deep links (`upi://pay`).
+ * RxFlow RetailerPaymentReminders v3.0
+ * Overdue & due bill alerts with 1-tap UPI payment deep links (`upi://pay`) for Distributors D1..D10.
  */
 
 import { NotificationEngine } from '../../engine/NotificationEngine';
+import { DISTRIBUTORS } from '../../data/mockDataStore';
 
 export interface DueInvoice {
   invoiceNumber: string;
@@ -15,14 +16,20 @@ export interface DueInvoice {
 }
 
 export default function RetailerPaymentReminders(container: HTMLElement): void {
-  const invoices: DueInvoice[] = [
-    { invoiceNumber: 'INV-2026-0847', distributorName: 'Shrine Pharma Stockist', amount: 12450.00, dueDate: '30 Jul 2026', status: 'due_soon', upiVpa: 'shrinepharma@upi' },
-    { invoiceNumber: 'INV-2026-0832', distributorName: 'Medico Distributors', amount: 8200.00, dueDate: '01 Aug 2026', status: 'due_soon', upiVpa: 'medicodistributors@upi' },
-    { invoiceNumber: 'INV-2026-0799', distributorName: 'Swastik Wholesaler', amount: 4500.00, dueDate: '20 Jul 2026', status: 'overdue', upiVpa: 'swastikpharma@upi' },
-  ];
+  const invoices: DueInvoice[] = DISTRIBUTORS.slice(0, 3).map((dist, i) => ({
+    invoiceNumber: `INV-2026-D${i + 1}-00${i + 1}`,
+    distributorName: dist.name,
+    amount: (i + 1) * 14500,
+    dueDate: `0${i + 1} Aug 2026`,
+    status: i === 2 ? 'overdue' : 'due_soon',
+    upiVpa: `distributor-d${i + 1}@upi`,
+  }));
+
+  const totalOutstanding = invoices.reduce((sum, inv) => sum + inv.amount, 0);
+  const overdueAmount = invoices.filter(i => i.status === 'overdue').reduce((sum, inv) => sum + inv.amount, 0);
 
   container.innerHTML = `
-    <div class="section-title">💳 due payments & 1-tap UPI checkout</div>
+    <div class="section-title">💳 Due Payments & 1-Tap UPI Checkout (Distributors D1-D10)</div>
 
     <!-- Outstanding Summary -->
     <div class="metro-grid" style="grid-auto-rows:120px;margin-bottom:16px;">
@@ -30,16 +37,16 @@ export default function RetailerPaymentReminders(container: HTMLElement): void {
         <div class="tile-badge">Alert</div>
         <div class="tile-icon">💳</div>
         <div>
-          <div class="tile-value">₹25,150</div>
+          <div class="tile-value">₹${totalOutstanding.toLocaleString('en-IN')}</div>
           <div class="tile-label">Total Outstanding Due</div>
-          <div class="tile-subtext">3 Invoices Across Stockists</div>
+          <div class="tile-subtext">${invoices.length} Invoices Across Distributors D1..D10</div>
         </div>
       </div>
       <div class="tile tile-wide bg-red">
         <div class="tile-badge">Overdue</div>
         <div class="tile-icon">⚠️</div>
         <div>
-          <div class="tile-value">₹4,500</div>
+          <div class="tile-value">₹${overdueAmount.toLocaleString('en-IN')}</div>
           <div class="tile-label">Overdue Payment</div>
           <div class="tile-subtext">Pay immediately to avoid credit lock</div>
         </div>
@@ -90,13 +97,10 @@ export default function RetailerPaymentReminders(container: HTMLElement): void {
       btn.addEventListener('click', (e) => {
         const inv = (e.currentTarget as HTMLElement).getAttribute('data-inv') || '';
         const amt = parseFloat((e.currentTarget as HTMLElement).getAttribute('data-amt') || '0');
-        const vpa = (e.currentTarget as HTMLElement).getAttribute('data-vpa') || 'shrinepharma@upi';
+        const vpa = (e.currentTarget as HTMLElement).getAttribute('data-vpa') || 'distributor-d1@upi';
 
-        // Launch native UPI app (GPay, PhonePe, Paytm) via upi:// URI scheme
         const upiUrl = `upi://pay?pa=${vpa}&pn=RxFlow&am=${amt}&tr=${inv}&cu=INR`;
         NotificationEngine.showToast(`Launching UPI App for Invoice ${inv} (₹${amt})...`, 'success');
-
-        // Open UPI deep link
         window.location.href = upiUrl;
       });
     });

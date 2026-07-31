@@ -41,8 +41,8 @@ export default function CatalogueView(container: HTMLElement): void {
               <div class="item-title">
                 ${prod.brand_name}
                 <span class="item-tag">${prod.sku}</span>
-                ${prod.sku === 'AUG625' ? '<span class="item-tag item-tag--green">Scheme: 10+2</span>' : ''}
-                ${prod.sku === 'ALP05' ? '<span class="item-tag item-tag--red">Schedule X</span>' : ''}
+                ${prod.scheme_tag ? `<span class="item-tag item-tag--green">${prod.scheme_tag}</span>` : ''}
+                ${prod.is_schedule_x ? '<span class="item-tag item-tag--red">Schedule X</span>' : ''}
               </div>
               <div class="item-sub">${prod.generic_salt} • Stock Available</div>
             </div>

@@ -1,10 +1,11 @@
 /**
- * Mediflow Order Queue View v3.0
- * Realtime distributor order inbox with FEFO stock allocation, invoice generation, and status controls.
+ * RxFlow Order Queue View v3.0
+ * Realtime distributor order inbox with FEFO stock allocation for Retailers R1..R10.
  */
 
 import { NotificationEngine } from '../../engine/NotificationEngine';
 import { SyncOrchestrator } from '../../engine/SyncOrchestrator';
+import { RETAILERS } from '../../data/mockDataStore';
 
 interface QueuedOrder {
   id: string;
@@ -18,42 +19,20 @@ interface QueuedOrder {
 }
 
 export default function OrderQueueView(container: HTMLElement): void {
-  const orders: QueuedOrder[] = [
-    {
-      id: 'ord-1',
-      orderNo: '#ORD-2026-4521',
-      retailerName: 'Rajesh Medical Store',
-      location: 'Kothrud, Pune',
-      itemsCount: 12,
-      totalAmount: 18450,
-      placedTime: '3 min ago',
-      status: 'Pending FEFO',
-    },
-    {
-      id: 'ord-2',
-      orderNo: '#ORD-2026-4520',
-      retailerName: 'Ganesh Pharmacy',
-      location: 'Deccan, Pune',
-      itemsCount: 8,
-      totalAmount: 7200,
-      placedTime: '15 min ago',
-      status: 'Pending FEFO',
-    },
-    {
-      id: 'ord-3',
-      orderNo: '#ORD-2026-4519',
-      retailerName: 'Apollo Chemist',
-      location: 'Viman Nagar, Pune',
-      itemsCount: 24,
-      totalAmount: 42100,
-      placedTime: '1 hour ago',
-      status: 'Allocated',
-    }
-  ];
+  const orders: QueuedOrder[] = RETAILERS.slice(0, 5).map((ret, i) => ({
+    id: `ord-${i + 1}`,
+    orderNo: `#ORD-2026-00${i + 1}`,
+    retailerName: ret.name,
+    location: `${ret.city}, India`,
+    itemsCount: 10 + i * 2,
+    totalAmount: (i + 1) * 14500,
+    placedTime: `${(i + 1) * 5} min ago`,
+    status: i === 0 ? 'Pending FEFO' : i === 1 ? 'Pending FEFO' : 'Allocated',
+  }));
 
   function render(): void {
     container.innerHTML = `
-      <div class="section-title">Distributor Order Inbox & Queue</div>
+      <div class="section-title">Distributor Order Inbox & Queue (Retailers R1-R10)</div>
       
       <!-- Action Bar -->
       <div class="flex justify-between items-center mb-md">

@@ -124,6 +124,7 @@ class AuthStoreEngine {
    * Logout user and clear tokens
    */
   public logout(): void {
+    sessionStorage.removeItem('rxflow_pin_unlocked');
     localStorage.removeItem(STORAGE_KEYS.TOKEN);
     localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
@@ -145,6 +146,7 @@ class AuthStoreEngine {
    * Clear session without hash navigation (used by AppStart license guard)
    */
   public logoutWithoutRedirect(): void {
+    sessionStorage.removeItem('rxflow_pin_unlocked');
     localStorage.removeItem(STORAGE_KEYS.TOKEN);
     localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
@@ -167,8 +169,9 @@ class AuthStoreEngine {
       const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
       const storedToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
       const storedPSToken = localStorage.getItem(STORAGE_KEYS.POWERSYNC_TOKEN);
+      const isPinUnlocked = sessionStorage.getItem('rxflow_pin_unlocked') === 'true';
 
-      if (storedUser && storedToken) {
+      if (storedUser && storedToken && isPinUnlocked) {
         const user: UserEntity = JSON.parse(storedUser);
         this.state = {
           isAuthenticated: true,

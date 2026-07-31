@@ -79,7 +79,12 @@ export function initRouter(): void {
 
   if (!window.location.hash) {
     const lic = LicenseEngine.getActiveLicense();
-    window.location.hash = lic.validation.ok ? '#/login' : '#/register';
+    const isPinUnlocked = sessionStorage.getItem('rxflow_pin_unlocked') === 'true';
+    if (!lic.validation.ok) {
+      window.location.hash = '#/register';
+    } else if (!isPinUnlocked) {
+      window.location.hash = '#/login';
+    }
   } else {
     handleRouteChange();
   }
@@ -109,12 +114,15 @@ async function handleRouteChange(): Promise<void> {
     return;
   }
 
-  // MANDATORY APPSTART LICENSE GUARD:
-  // If license key is NOT verified, allow only #/login or #/register
+  // MANDATORY APPSTART LICENSE & PIN LOCK GUARD:
+  // 1. License Key must be verified
+  // 2. PIN must be unlocked in current browser session (sessionStorage)
   const activeLic = LicenseEngine.getActiveLicense();
-  if (!activeLic.validation.ok) {
-    if (hash !== '#/login' && hash !== '#/register') {
-      window.location.hash = '#/register';
+  const isPinUnlocked = sessionStorage.getItem('rxflow_pin_unlocked') === 'true';
+
+  if (!activeLic.validation.ok || !isPinUnlocked) {
+    if (hash !== '#/login' && hash !== '#/register' && hash !== '#/landing') {
+      window.location.hash = activeLic.validation.ok ? '#/login' : '#/register';
       return;
     }
   }

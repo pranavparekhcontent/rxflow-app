@@ -253,6 +253,7 @@ function renderPinLockScreen(container: HTMLElement, clientRow: GSheetClientRow 
   const changeBtn = container.querySelector('#change-key-btn') as HTMLButtonElement;
 
   changeBtn?.addEventListener('click', async () => {
+    sessionStorage.removeItem('rxflow_pin_unlocked');
     await LicenseEngine.clearLicense();
     renderLicenseGate(container);
   });
@@ -283,6 +284,7 @@ function renderPinLockScreen(container: HTMLElement, clientRow: GSheetClientRow 
     const success = await AuthStore.login(email, role);
 
     if (success) {
+      sessionStorage.setItem('rxflow_pin_unlocked', 'true');
       // Update name in state
       if (AuthStore.getState().user) {
         AuthStore.getState().user!.fullName = name;

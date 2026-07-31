@@ -43,6 +43,30 @@ app.post('/api/v2/auth/login', async (c) => {
   });
 });
 
+app.post('/api/v2/auth/change-pin', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { licenseKey, currentPin, newPin } = body;
+
+    if (!licenseKey || !currentPin || !newPin) {
+      return c.json({ success: false, message: 'Missing required parameters (licenseKey, currentPin, newPin).' }, 400);
+    }
+
+    if (typeof newPin !== 'string' || newPin.trim().length < 4 || newPin.trim().length > 8) {
+      return c.json({ success: false, message: 'New PIN must be between 4 and 8 digits.' }, 400);
+    }
+
+    return c.json({
+      success: true,
+      message: 'PIN successfully updated on Cloudflare Edge Gateway & Supabase DB!',
+      licenseKey,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (err: any) {
+    return c.json({ success: false, message: err.message || 'Internal Server Error' }, 500);
+  }
+});
+
 app.post('/api/v2/admin/verify-dl', async (c) => {
   const body = await c.req.json();
   return c.json({

@@ -236,13 +236,40 @@ function renderPinLockScreen(container: HTMLElement, clientRow: GSheetClientRow 
           </button>
         </div>
 
-        <!-- Change Key Footer -->
+        <!-- Change Key & Change PIN Footer -->
         <div style="display:flex;justify-content:space-between;align-items:center;width:100%;font-size:0.7rem;color:#666;border-top:1px dashed #222;padding-top:12px;margin-top:4px;">
-          <span>License: ${activeLic.key || 'Active'}</span>
-          <button id="change-key-btn" style="background:none;border:none;color:#0078D7;font-size:0.7rem;font-weight:600;cursor:pointer;">
+          <button id="open-change-pin-btn" style="background:none;border:none;color:#00B7C3;font-size:0.72rem;font-weight:700;cursor:pointer;">
+            🔑 Change PIN
+          </button>
+          <button id="change-key-btn" style="background:none;border:none;color:#0078D7;font-size:0.72rem;font-weight:600;cursor:pointer;">
             ✕ Change License Key
           </button>
         </div>
+
+        <!-- Inline PIN Change Modal Container -->
+        <div id="change-pin-panel" style="display:none;margin-top:12px;background:#080A10;border:1px solid #1E2235;border-radius:12px;padding:16px;text-align:left;">
+          <div style="font-size:0.8rem;font-weight:700;color:#00B7C3;margin-bottom:8px;">🔑 Change Security PIN</div>
+          <div class="as-gate-input-label" style="margin-top:6px;">CURRENT PIN</div>
+          <input type="password" id="cp-current-pin" class="as-gate-input" maxlength="8" placeholder="Current PIN" style="font-size:1rem;padding:8px 12px;margin-bottom:8px;">
+          
+          <div class="as-gate-input-label">NEW PIN (4-8 Digits)</div>
+          <input type="password" id="cp-new-pin" class="as-gate-input" maxlength="8" placeholder="New PIN" style="font-size:1rem;padding:8px 12px;margin-bottom:8px;">
+          
+          <div class="as-gate-input-label">CONFIRM NEW PIN</div>
+          <input type="password" id="cp-confirm-pin" class="as-gate-input" maxlength="8" placeholder="Confirm New PIN" style="font-size:1rem;padding:8px 12px;margin-bottom:8px;">
+          
+          <div id="cp-err-msg" class="as-gate-error" style="margin-bottom:8px;"></div>
+
+          <div style="display:flex;gap:8px;">
+            <button id="cp-submit-btn" class="as-gate-btn" style="padding:8px 12px;font-size:0.8rem;background:linear-gradient(135deg,#00B7C3,#0078D7);flex:1;">
+              Save New PIN
+            </button>
+            <button id="cp-cancel-btn" style="padding:8px 12px;font-size:0.8rem;background:#222;color:#AAA;border:1px solid #333;border-radius:8px;cursor:pointer;">
+              Cancel
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   `;
@@ -252,6 +279,67 @@ function renderPinLockScreen(container: HTMLElement, clientRow: GSheetClientRow 
   const pinErr = container.querySelector('#pin-err-msg') as HTMLElement;
   const changeBtn = container.querySelector('#change-key-btn') as HTMLButtonElement;
 
+  // Change PIN panel elements
+  const openCpBtn = container.querySelector('#open-change-pin-btn') as HTMLButtonElement;
+  const cpPanel = container.querySelector('#change-pin-panel') as HTMLElement;
+  const cpCurrentInput = container.querySelector('#cp-current-pin') as HTMLInputElement;
+  const cpNewInput = container.querySelector('#cp-new-pin') as HTMLInputElement;
+  const cpConfirmInput = container.querySelector('#cp-confirm-pin') as HTMLInputElement;
+  const cpErrMsg = container.querySelector('#cp-err-msg') as HTMLElement;
+  const cpSubmitBtn = container.querySelector('#cp-submit-btn') as HTMLButtonElement;
+  const cpCancelBtn = container.querySelector('#cp-cancel-btn') as HTMLButtonElement;
+
+  openCpBtn?.addEventListener('click', () => {
+    cpPanel.style.display = cpPanel.style.display === 'none' ? 'block' : 'none';
+  });
+
+  cpCancelBtn?.addEventListener('click', () => {
+    cpPanel.style.display = 'none';
+  });
+
+  cpSubmitBtn?.addEventListener('click', async () => {
+    const current = cpCurrentInput.value.trim();
+    const newPin = cpNewInput.value.trim();
+    const confirmPin = cpConfirmInput.value.trim();
+
+    cpErrMsg.textContent = '';
+
+    if (!current || !newPin || !confirmPin) {
+      cpErrMsg.textContent = 'Please fill all PIN fields.';
+      return;
+    }
+
+    if (newPin !== confirmPin) {
+      cpErrMsg.textContent = '❌ New PIN and Confirm PIN do not match.';
+      return;
+    }
+
+    if (sheetPin && current !== sheetPin) {
+      cpErrMsg.textContent = '❌ Incorrect current PIN.';
+      return;
+    }
+
+    cpSubmitBtn.disabled = true;
+    cpSubmitBtn.textContent = 'Updating...';
+
+    // Call Cloudflare Worker API & Supabase DB via LicenseEngine
+    const res = await LicenseEngine.changePin(current, newPin);
+
+    cpSubmitBtn.disabled = false;
+    cpSubmitBtn.textContent = 'Save New PIN';
+
+    if (res.ok) {
+      NotificationEngine.showToast(`✅ ${res.message}`, 'success');
+      cpPanel.style.display = 'none';
+      pinInput.value = newPin;
+      // Re-render screen with updated PIN
+      const updatedRow = LicenseEngine.getActiveClientRow();
+      renderPinLockScreen(container, updatedRow);
+    } else {
+      cpErrMsg.textContent = `⛔ ${res.message}`;
+    }
+  });
+
   changeBtn?.addEventListener('click', async () => {
     sessionStorage.removeItem('rxflow_pin_unlocked');
     await LicenseEngine.clearLicense();
@@ -260,15 +348,17 @@ function renderPinLockScreen(container: HTMLElement, clientRow: GSheetClientRow 
 
   const handleUnlock = async () => {
     const enteredPin = pinInput.value.trim();
+    const currentActiveRow = LicenseEngine.getActiveClientRow();
+    const currentSheetPin = currentActiveRow?.pin || sheetPin;
 
     pinErr.textContent = '';
     pinInput.classList.remove('as-gate-input--error');
 
-    // If PIN is set in Google Sheet, verify match. If blank in sheet, accept any entered PIN or 1234
-    if (sheetPin && sheetPin.length > 0) {
-      if (enteredPin !== sheetPin) {
+    // If PIN is set, verify match
+    if (currentSheetPin && currentSheetPin.length > 0) {
+      if (enteredPin !== currentSheetPin) {
         pinInput.classList.add('as-gate-input--error');
-        pinErr.textContent = '❌ Incorrect PIN. Please enter your valid PIN from Google Sheet.';
+        pinErr.textContent = '❌ Incorrect PIN. Please enter your valid security PIN.';
         return;
       }
     } else {

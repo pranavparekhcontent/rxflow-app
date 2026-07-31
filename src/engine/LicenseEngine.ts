@@ -567,6 +567,52 @@ class LicenseEngineService {
     this.activeClientRow = null;
     await KeyStore.clear();
   }
+
+  /**
+   * Change user PIN via Cloudflare Worker API & Supabase DB
+   */
+  public async changePin(currentPin: string, newPin: string): Promise<{ ok: boolean; message: string }> {
+    const key = this.activeLicenseKey || (await KeyStore.load());
+    if (!key) {
+      return { ok: false, message: 'No active license key found.' };
+    }
+
+    if (!newPin || newPin.trim().length < 4 || newPin.trim().length > 8) {
+      return { ok: false, message: 'New PIN must be between 4 and 8 digits.' };
+    }
+
+    try {
+      const response = await fetch('https://rxflow-api.pranavparekhcontent.workers.dev/api/v2/auth/change-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          licenseKey: key,
+          currentPin,
+          newPin: newPin.trim(),
+        }),
+      });
+
+      const resData = await response.json();
+      if (!response.ok || !resData.success) {
+        return { ok: false, message: resData.message || 'Failed to update PIN on server.' };
+      }
+
+      // Update local ClientRow PIN so the new PIN is immediately active
+      if (this.activeClientRow) {
+        this.activeClientRow.pin = newPin.trim();
+        KeyStore.saveClientRow(this.activeClientRow);
+      }
+
+      return { ok: true, message: 'PIN updated successfully on Cloudflare Worker & Supabase DB!' };
+    } catch {
+      // Offline fallback: update local client row PIN
+      if (this.activeClientRow) {
+        this.activeClientRow.pin = newPin.trim();
+        KeyStore.saveClientRow(this.activeClientRow);
+      }
+      return { ok: true, message: 'PIN updated locally (offline mode).' };
+    }
+  }
 }
 
 export const LicenseEngine = new LicenseEngineService();

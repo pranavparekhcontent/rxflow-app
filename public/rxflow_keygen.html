@@ -1,570 +1,253 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RxFlow PWA — License Key Generator & GSheet Inspector Pro</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Courier+Prime:wght@700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #080A10;
-      --surface: #10131E;
-      --surface-card: #181C2B;
-      --border: #1E2235;
-      --primary: #0078D7;
-      --cyan: #00B7C3;
-      --green: #00D4AA;
-      --red: #FF4D4D;
-      --text: #E8EAF6;
-      --muted: #626888;
-      --font-body: 'Plus Jakarta Sans', sans-serif;
-      --font-code: 'Courier Prime', monospace;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body {
-      font-family: var(--font-body);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 30px 20px;
-    }
-
-    /* Header */
-    .header {
-      width: min(900px, 95vw);
-      text-align: center;
-      margin-bottom: 28px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .header h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, var(--primary), var(--cyan));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 6px;
-    }
-
-    .header p {
-      font-size: 0.85rem;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    /* Grid */
-    .grid {
-      width: min(900px, 95vw);
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-bottom: 28px;
-    }
-
-    @media (max-width: 768px) {
-      .grid { grid-template-columns: 1fr; }
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 28px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
-    }
-
-    .card-title {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: #FFF;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px dashed var(--border);
-    }
-
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    input, select {
-      width: 100%;
-      padding: 12px 16px;
-      background: var(--bg);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      font-size: 0.95rem;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(0,120,215,0.15);
-    }
-
-    .btn {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--primary), var(--cyan));
-      color: white;
-      font-size: 0.9rem;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.15s;
-    }
-
-    .btn:hover { opacity: 0.92; }
-    .btn:active { transform: scale(0.98); }
-
-    .btn-green {
-      background: linear-gradient(135deg, var(--green), var(--cyan));
-      color: #080A10;
-    }
-
-    /* Result Box */
-    .key-display {
-      padding: 18px;
-      background: var(--bg);
-      border: 1.5px solid var(--green);
-      border-radius: 12px;
-      text-align: center;
-      font-family: var(--font-code);
-      font-size: 1.6rem;
-      letter-spacing: 3px;
-      color: var(--green);
-      word-break: break-all;
-      display: none;
-      user-select: all;
-      animation: fadeIn 0.4s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .hint {
-      font-size: 0.72rem;
-      color: var(--muted);
-      text-align: center;
-    }
-
-    /* Decode Output */
-    .decode-out {
-      padding: 16px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      font-size: 0.82rem;
-      line-height: 1.6;
-      color: #CCC;
-    }
-
-    /* Full-width GSheet Inspector */
-    .inspector-wrapper {
-      width: min(900px, 95vw);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 24px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
-    }
-
-    .table-container {
-      width: 100%;
-      overflow-x: auto;
-      margin-top: 14px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-      text-align: left;
-    }
-
-    th {
-      padding: 10px 14px;
-      background: var(--bg);
-      color: var(--muted);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-bottom: 1px solid var(--border);
-    }
-
-    td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text);
-    }
-
-    tr:hover td {
-      background: rgba(255,255,255,0.02);
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-    .badge-retailer { background: rgba(0,120,215,0.15); color: #0078D7; }
-    .badge-distributor { background: rgba(0,183,195,0.15); color: #00B7C3; }
-    .badge-manufacturer { background: rgba(92,45,145,0.15); color: #9B51E0; }
-    .badge-sales_rep { background: rgba(0,212,170,0.15); color: #00D4AA; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RxFlow PWA - Key Generator Pro</title>
+    <style>
+        :root {
+            --bg: #F5EDE0;
+            --surface: #FFFFFF;
+            --primary: #0078D7;
+            --text: #2C2A24;
+            --muted: #8E8C82;
+            --shadow: 10px 10px 20px #E6DDD0, -10px -10px 20px #FFFFFF;
+            --shadow-inset: inset 5px 5px 10px #E6DDD0, inset -5px -5px 10px #FFFFFF;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background: var(--bg);
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+        }
+        h1 { color: var(--primary); margin-bottom: 25px; font-size: 24px; font-weight: 800; }
+        .input-group { margin-bottom: 18px; text-align: left; }
+        label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; margin-left: 10px; }
+        input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            background: var(--bg);
+            box-shadow: var(--shadow-inset);
+            font-size: 15px;
+            color: var(--text);
+            box-sizing: border-box;
+            outline: none;
+            font-family: inherit;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 15px;
+            background: var(--primary);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
+        .result {
+            margin-top: 25px;
+            padding: 18px;
+            border-radius: 20px;
+            background: var(--bg);
+            box-shadow: var(--shadow-inset);
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            display: none;
+            letter-spacing: 2px;
+            user-select: all;
+        }
+        .copy-hint { font-size: 11px; color: var(--muted); margin-top: 10px; display: none; }
+        .decode-card {
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 2px dashed #E6DDD0;
+        }
+        #decodeResult {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- Header -->
-  <div class="header">
-    <h1>💊 RxFlow KeyGen Pro</h1>
-    <p>10-Digit Base72 Generator & Master Google Sheet Inspector</p>
-  </div>
-
-  <!-- Main Grid -->
-  <div class="grid">
-
-    <!-- Card 1: Key Generator -->
-    <div class="card">
-      <div class="card-title">🔑 Generate 10-Digit Key</div>
-
-      <div class="input-group">
-        <label>Client Name</label>
-        <input type="text" id="gen-client" placeholder="e.g. DEMO Chemist / Stockist Agencies" maxlength="40">
-      </div>
-
-      <div class="input-group">
-        <label>City / Location</label>
-        <input type="text" id="gen-city" placeholder="e.g. Mumbai / Pune" maxlength="30">
-      </div>
-
-      <div class="input-group">
-        <label>Expiry Date</label>
-        <input type="date" id="gen-expiry">
-      </div>
-
-      <button class="btn" onclick="generateKey()">Generate License Key</button>
-
-      <div id="key-output" class="key-display"></div>
-      <div class="hint">Base72 Encoded: Upper/Lowercase + Digits + Special Characters (!@#$%^&*())</div>
+<div class="container">
+    <h1>RxFlow KeyGen Pro</h1>
+    
+    <div class="input-group">
+        <label>CLIENT NAME</label>
+        <input type="text" id="client" placeholder="e.g. DEMO CHEMIST" maxlength="40" autocomplete="off">
     </div>
 
-    <!-- Card 2: Reverse Fetch & Key Inspector -->
-    <div class="card">
-      <div class="card-title">🔍 Reverse Key Inspector</div>
-
-      <div class="input-group">
-        <label>Paste 10-Digit Base72 Key</label>
-        <input type="text" id="decode-input" placeholder="Paste key here..." maxlength="10" oninput="inspectKey()">
-      </div>
-
-      <div id="decode-output" class="decode-out">
-        Paste a 10-digit key above to inspect decoded entity details, expiry date, days remaining, and signature checksum.
-      </div>
+    <div class="input-group">
+        <label>CITY / LOCATION</label>
+        <input type="text" id="city" placeholder="e.g. MUMBAI" maxlength="30" autocomplete="off">
     </div>
 
-  </div>
-
-  <!-- Card 3: Master Google Sheet Live Inspector -->
-  <div class="inspector-wrapper">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-      <div class="card-title" style="border:none;padding:0;">
-        📡 Master Google Sheet Registry Live Sync
-      </div>
-      <button class="btn btn-green" onclick="fetchGSheetData()" style="max-width:240px;padding:10px 16px;">
-        Refresh Sheet Data
-      </button>
+    <div class="input-group">
+        <label>APP EXPIRY DATE</label>
+        <input type="date" id="expiry">
     </div>
 
-    <div class="table-container">
-      <table id="gsheet-table">
-        <thead>
-          <tr>
-            <th>Sr. No.</th>
-            <th>Client Name</th>
-            <th>Role</th>
-            <th>City</th>
-            <th>License Key</th>
-            <th>PIN</th>
-            <th>Email / Contact</th>
-            <th>MSPC / DL</th>
-          </tr>
-        </thead>
-        <tbody id="gsheet-tbody">
-          <tr>
-            <td colspan="8" style="text-align:center;color:var(--muted);padding:20px;">
-              Click "Refresh Sheet Data" to fetch records from Master Google Sheet.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+    <button class="btn" onclick="generate()">Generate 10-Digit Key</button>
+    
+    <div id="result" class="result"></div>
+    <div id="hint" class="copy-hint">Key generated! Encodes Client Name, City, and Expiry Date.</div>
 
-  <script>
-    // ---------- 10-Digit Base72 Alphabet ----------
+    <div class="decode-card">
+        <div class="input-group">
+            <label>REVERSE FETCH (Paste Key)</label>
+            <input type="text" id="decodeInput" placeholder="Paste 10-digit key here..." oninput="decode()" maxlength="10">
+        </div>
+        <div id="decodeResult"></div>
+    </div>
+</div>
+
+<script>
+    // 72-character Base72 alphabet with small & large cases, numbers, and special characters
     const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()";
-    const BASE = BigInt(ALPHABET.length); // 72
-    const NAME_CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZ. -"; // 30 lookup chars
+    const BASE = BigInt(ALPHABET.length);
 
-    const GSHEET_CSV_URL =
-      "https://docs.google.com/spreadsheets/d/1EZDfaM1PCVyqOoxAuy0iidKSJv31ifc5GIbz204sjJM/gviz/tq?tqx=out:csv";
+    // 30-character lookup alphabet for encoding name/city text
+    const NAME_CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZ. -";
 
-    // Set default expiry date to 1 year from today
-    document.addEventListener('DOMContentLoaded', () => {
-      const expInput = document.getElementById('gen-expiry');
-      const d = new Date();
-      d.setFullYear(d.getFullYear() + 1);
-      expInput.value = d.toISOString().split('T')[0];
-      fetchGSheetData();
-    });
-
-    function encodeEntity(text) {
-      let val = 0n;
-      const clean = text.toUpperCase().padEnd(8, ' ').slice(0, 8);
-      for (let i = 0; i < 8; i++) {
-        let idx = NAME_CHARS.indexOf(clean[i]);
-        if (idx === -1) idx = 0;
-        val = (val << 5n) | BigInt(idx);
-      }
-      return val; // 40 bits
+    function encodeText(text) {
+        let val = 0n;
+        const clean = text.toUpperCase().padEnd(8, ' ').slice(0, 8);
+        for (let i = 0; i < 8; i++) {
+            let charIdx = NAME_CHARS.indexOf(clean[i]);
+            if (charIdx === -1) charIdx = 0;
+            val = (val << 5n) | BigInt(charIdx);
+        }
+        return val; // 40 bits
     }
 
-    function decodeEntity(val) {
-      let name = "";
-      for (let i = 0; i < 8; i++) {
-        const charIdx = Number((val >> BigInt((7 - i) * 5)) & 31n);
-        name += NAME_CHARS[charIdx] || ' ';
-      }
-      return name.trim();
+    function decodeText(val) {
+        let name = "";
+        for (let i = 0; i < 8; i++) {
+            const charIdx = Number((val >> BigInt((7 - i) * 5)) & 31n);
+            name += NAME_CHARS[charIdx] || ' ';
+        }
+        return name.trim();
     }
 
-    function generateKey() {
-      const client = document.getElementById('gen-client').value.trim();
-      const city = document.getElementById('gen-city').value.trim();
-      const expiry = document.getElementById('gen-expiry').value;
+    function generate() {
+        const client = document.getElementById('client').value.trim();
+        const city = document.getElementById('city').value.trim();
+        const expiryDate = document.getElementById('expiry').value;
 
-      if (!client || !expiry) {
-        alert("Please enter Client Name and Expiry Date.");
-        return;
-      }
+        if (!client || !expiryDate) return alert("Please enter Client Name and Expiry Date");
 
-      // Combine Client Name + City
-      const combinedText = city ? `${client} ${city}` : client;
+        const combinedText = city ? `${client} ${city}` : client;
 
-      const dateObj = new Date(expiry);
-      const year = BigInt(dateObj.getFullYear() - 2024) & 63n; // 6 bits
-      const month = BigInt(dateObj.getMonth() + 1) & 15n;    // 4 bits
-      const day = BigInt(dateObj.getDate()) & 31n;          // 5 bits
-      const datePart = (year << 9n) | (month << 5n) | day;  // 15 bits
+        const dateObj = new Date(expiryDate);
+        const year = BigInt(dateObj.getFullYear() - 2024) & 63n; // 6 bits
+        const month = BigInt(dateObj.getMonth() + 1) & 15n;    // 4 bits
+        const day = BigInt(dateObj.getDate()) & 31n;          // 5 bits
+        const datePart = (year << 9n) | (month << 5n) | day;  // 15 bits
 
-      const namePart = encodeEntity(combinedText); // 40 bits
+        const namePart = encodeText(combinedText); // 40 bits
+        
+        // Combine: [Checksum: 6] [Date: 15] [Name: 40] = 61 bits
+        let data = (datePart << 40n) | namePart;
+        
+        // Checksum
+        const checksum = (data ^ 0x5B5B5B5Bn) % 64n;
+        let combined = (checksum << 55n) | data;
+        
+        // Encode to 10 chars
+        let key = "";
+        for (let i = 0; i < 10; i++) {
+            key = ALPHABET[Number(combined % BASE)] + key;
+            combined /= BASE;
+        }
 
-      // Combine: [Checksum: 6] [Date: 15] [Name: 40] = 61 bits
-      let data = (datePart << 40n) | namePart;
-      const checksum = (data ^ 0x5B5B5B5Bn) % 64n;
-      let combined = (checksum << 55n) | data;
-
-      // Encode to 10 Base72 chars
-      let key = "";
-      for (let i = 0; i < 10; i++) {
-        key = ALPHABET[Number(combined % BASE)] + key;
-        combined /= BASE;
-      }
-
-      const out = document.getElementById('key-output');
-      out.textContent = key;
-      out.style.display = 'block';
+        const resDiv = document.getElementById('result');
+        resDiv.textContent = key;
+        resDiv.style.display = 'block';
+        document.getElementById('hint').style.display = 'block';
     }
 
-    function inspectKey() {
-      const key = document.getElementById('decode-input').value.trim();
-      const out = document.getElementById('decode-output');
-
-      if (key.length !== 10) {
-        out.innerHTML = "Paste a 10-digit key above to inspect decoded entity details, expiry date, days remaining, and signature checksum.";
-        return;
-      }
-
-      try {
-        let combined = 0n;
-        for (let i = 0; i < key.length; i++) {
-          const idx = ALPHABET.indexOf(key[i]);
-          if (idx === -1) throw new Error("Invalid Base72 character.");
-          combined = combined * BASE + BigInt(idx);
+    function decode() {
+        const key = document.getElementById('decodeInput').value.trim();
+        const output = document.getElementById('decodeResult');
+        
+        if (key.length !== 10) {
+            output.textContent = "";
+            output.style.background = "transparent";
+            return;
         }
 
-        const checksum = (combined >> 55n) & 63n;
-        const data = combined & ((1n << 55n) - 1n);
-        const expectedChecksum = (data ^ 0x5B5B5B5Bn) % 64n;
+        try {
+            let combined = 0n;
+            for (let i = 0; i < key.length; i++) {
+                const idx = ALPHABET.indexOf(key[i]);
+                if (idx === -1) throw "Invalid character";
+                combined = combined * BASE + BigInt(idx);
+            }
 
-        if (checksum !== expectedChecksum) {
-          out.innerHTML = `<span style="color:var(--red);font-weight:700;">❌ Corrupted Key / Invalid Signature</span>`;
-          return;
+            const checksum = (combined >> 55n) & 63n;
+            const data = combined & 0x7FFFFFFFFFFFFFFn;
+            const expectedChecksum = (data ^ 0x5B5B5B5Bn) % 64n;
+
+            if (checksum !== expectedChecksum) {
+                output.textContent = "❌ Invalid Key Signature";
+                output.style.color = "#D32F2F";
+                output.style.background = "#FFEBEE";
+                return;
+            }
+
+            const datePart = (data >> 40n) & 0x7FFFn;
+            const namePart = data & 0xFFFFFFFFFFn;
+
+            const year = 2024 + Number((datePart >> 9n) & 63n);
+            const month = Number((datePart >> 5n) & 15n);
+            const day = Number(datePart & 31n);
+            
+            const decodedEntity = decodeText(namePart);
+
+            output.innerHTML = `
+                <div style="text-align:left;">
+                    <b style="color:var(--muted)">ENTITY:</b> <span style="color:var(--primary)">${decodedEntity}</span><br>
+                    <b style="color:var(--muted)">EXPIRY:</b> <span style="color:var(--primary)">${day}/${month}/${year}</span>
+                </div>
+            `;
+            output.style.background = "#E8F5E9";
+            output.style.color = "var(--primary)";
+        } catch (e) {
+            output.textContent = "❌ Malformed key";
+            output.style.color = "#D32F2F";
+            output.style.background = "#FFEBEE";
         }
-
-        const datePart = (data >> 40n) & 0x7FFFn;
-        const namePart = data & 0xFFFFFFFFFFn;
-
-        const year = 2024 + Number((datePart >> 9n) & 63n);
-        const month = Number((datePart >> 5n) & 15n);
-        const day = Number(datePart & 31n);
-
-        const entityName = decodeEntity(namePart);
-        const expDate = new Date(year, month - 1, day);
-        const today = new Date();
-        today.setHours(0,0,0,0);
-
-        const daysLeft = Math.round((expDate.getTime() - today.getTime()) / 86400000);
-        const isExpired = expDate < today;
-
-        out.innerHTML = `
-          <div style="display:flex;flex-direction:column;gap:4px;">
-            <div><strong style="color:var(--muted)">ENTITY:</strong> <span style="color:#FFF;font-weight:700;">${entityName}</span></div>
-            <div><strong style="color:var(--muted)">EXPIRY:</strong> <span style="color:#FFF;">${day}/${month}/${year}</span></div>
-            <div><strong style="color:var(--muted)">STATUS:</strong> ${isExpired ? `<span style="color:var(--red);font-weight:700;">Expired (${daysLeft} days ago)</span>` : `<span style="color:var(--green);font-weight:700;">Valid (${daysLeft} days left)</span>`}</div>
-            <div><strong style="color:var(--muted)">CHECKSUM:</strong> <span style="color:var(--green)">✓ Base72 Signature Valid</span></div>
-          </div>
-        `;
-      } catch (err) {
-        out.innerHTML = `<span style="color:var(--red);font-weight:700;">❌ Malformed key: ${err.message}</span>`;
-      }
     }
+</script>
 
-    // ---------- GSheet Parser & Renderer ----------
-    function parseCSV(text) {
-      const rows = [];
-      const lines = text.split(/\r?\n/);
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        const cells = [];
-        let current = '';
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (char === '"' && line[i + 1] === '"') { current += '"'; i++; }
-          else if (char === '"') { inQuotes = !inQuotes; }
-          else if (char === ',' && !inQuotes) { cells.push(current.trim()); current = ''; }
-          else { current += char; }
-        }
-        cells.push(current.trim());
-        rows.push(cells);
-      }
-      return rows;
-    }
-
-    async function fetchGSheetData() {
-      const tbody = document.getElementById('gsheet-tbody');
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--cyan);padding:20px;">Fetching live records from Google Sheet...</td></tr>`;
-
-      try {
-        const res = await fetch(GSHEET_CSV_URL + `&t=${Date.now()}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const csv = await res.text();
-        const rows = parseCSV(csv);
-
-        if (rows.length < 2) {
-          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--red);padding:20px;">Sheet is empty.</td></tr>`;
-          return;
-        }
-
-        // Header detection
-        let headerIdx = 0;
-        for (let i = 0; i < Math.min(rows.length, 10); i++) {
-          const rowText = rows[i].join(' ').toLowerCase();
-          if (rowText.includes('client') || rowText.includes('role') || rowText.includes('key')) {
-            headerIdx = i;
-            break;
-          }
-        }
-
-        const headers = rows[headerIdx].map(h => h.toLowerCase().trim());
-        const getCol = (keywords) => headers.findIndex(h => keywords.some(k => h.includes(k)));
-
-        const colSr = getCol(['sr', '#', 'id']);
-        const colClient = getCol(['client', 'name']);
-        const colRole = getCol(['role']);
-        const colCity = getCol(['city', 'location']);
-        const colKey = getCol(['key', 'license']);
-        const colPin = getCol(['pin', 'pass']);
-        const colEmail = getCol(['email']);
-        const colMspc = getCol(['mspc', 'reg']);
-        const colDl = getCol(['license', 'dl', 'pharmacist']);
-
-        let html = '';
-        let count = 0;
-
-        for (let i = headerIdx + 1; i < rows.length; i++) {
-          const r = rows[i];
-          const client = colClient !== -1 ? r[colClient] : '';
-          if (!client) continue;
-
-          count++;
-          const sr = colSr !== -1 ? r[colSr] : count;
-          const role = colRole !== -1 ? r[colRole] : 'Retailer';
-          const city = colCity !== -1 ? r[colCity] : '-';
-          const key = colKey !== -1 ? r[colKey] : '-';
-          const pin = colPin !== -1 ? r[colPin] : '1234';
-          const email = colEmail !== -1 ? r[colEmail] : '-';
-          const mspc = colMspc !== -1 ? r[colMspc] : '-';
-          const dl = colDl !== -1 ? r[colDl] : '-';
-
-          const roleKey = role.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-          html += `
-            <tr>
-              <td><strong>#${sr}</strong></td>
-              <td><strong style="color:#FFF;">${client}</strong></td>
-              <td><span class="badge badge-${roleKey}">${role}</span></td>
-              <td>${city || '-'}</td>
-              <td><code style="color:var(--green);font-weight:700;">${key || 'Not Issued'}</code></td>
-              <td><code style="color:var(--cyan);">${pin || '1234'}</code></td>
-              <td>${email || '-'}</td>
-              <td><span style="font-size:0.75rem;color:var(--muted);">${mspc} ${dl ? '/ ' + dl : ''}</span></td>
-            </tr>
-          `;
-        }
-
-        tbody.innerHTML = html || `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px;">No client rows found.</td></tr>`;
-      } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--red);padding:20px;">Failed to fetch Google Sheet: ${err.message}</td></tr>`;
-      }
-    }
-  </script>
 </body>
 </html>

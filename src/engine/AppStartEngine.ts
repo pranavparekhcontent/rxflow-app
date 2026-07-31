@@ -69,9 +69,7 @@ class AppStartEngineService {
       this.pingInterval = setInterval(() => this.performPing(), 30_000);
     }
 
-    // 6. UI Render & Sync Telemetry
-    this.createDevDrawer();
-    this.attachShortcut();
+    // 6. Sync Telemetry
     this.renderSyncWidget();
 
     SyncOrchestrator.subscribe((telemetry) => {
@@ -176,8 +174,7 @@ class AppStartEngineService {
   // ---------- Private Dev Drawer UI ----------
 
   private createDevDrawer(): void {
-    const existing = document.getElementById('rxflow-dev-drawer');
-    if (existing) return;
+    return; // Disabled for live production app
 
     const drawer = document.createElement('div');
     drawer.id = 'rxflow-dev-drawer';

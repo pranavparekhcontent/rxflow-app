@@ -23,7 +23,7 @@ app.use('*', cors({
 app.get('/api/v2/health', (c) => {
   return c.json({
     status: 'ok',
-    service: 'Mediflow Edge Gateway',
+    service: 'RxFlow Edge Gateway',
     version: '3.0.0',
     region: 'Maharashtra/IN',
     timestamp: new Date().toISOString()

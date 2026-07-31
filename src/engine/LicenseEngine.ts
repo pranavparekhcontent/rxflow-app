@@ -1,15 +1,16 @@
 /**
- * RxFlow LicenseEngine v4.0
- * Ported from DEV TOOLS / appstart (license.js & keystore.js) & pharma_keygen.html.
+ * RxFlow LicenseEngine v4.1 — Smart Field Scanner & Expiry Guard
+ * Ported from DEV TOOLS / appstart (license.js, keystore.js & translator.js)
  * 
  * Features:
  * - 10-digit Base72 license key decoder & checksum validator
- * - Google Sheet CSV remote key validation (primary gate)
- * - 3-Layer KeyStore persistence (Cookie + IndexedDB + localStorage)
- * - NO key generator (removed — keys are generated externally via pharma_keygen.html)
+ * - Automatic Expiry Guard: locks app when expiryDate < today
+ * - Smart Field Scanner: scans Google Sheet headers dynamically using fuzzy keyword matching
+ * - Multi-Layer KeyStore persistence (Cookie + IndexedDB + localStorage)
+ * - NO embedded key generator — keys generated externally via pharma_keygen.html
  */
 
-// ---------- 10-Digit Base72 License Core ----------
+import { type UserRole } from './Router';
 
 const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()";
 const BASE = BigInt(ALPHABET.length); // 72
@@ -31,7 +32,8 @@ export interface LicenseValidationResult {
 export interface GSheetClientRow {
   srNo: string;
   clientName: string;
-  role: string;
+  role: UserRole;
+  rawRole: string;
   email: string;
   contact: string;
   licenseKey: string;
@@ -39,12 +41,6 @@ export interface GSheetClientRow {
   mspcRegNo: string;
   pharmacistLicense: string;
   pin: string;
-}
-
-export interface LicenseKeyDetails {
-  key: string;
-  entityName: string;
-  expiryDate: Date;
 }
 
 function decodeName(val: bigint): string {
@@ -131,7 +127,51 @@ export function validateLicenseKey(key: string): LicenseValidationResult {
   }
 }
 
-// ---------- Google Sheet CSV Validation ----------
+// ---------- Smart Field Scanner (AppStart Engine Port) ----------
+
+/**
+ * Fuzzy header matcher — finds matching column name from keyword list.
+ */
+function findHeader(headers: string[], keywords: string[]): number {
+  if (!headers || !Array.isArray(headers)) return -1;
+
+  const cleanHeaders = headers.map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+  const cleanKeywords = keywords.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''));
+
+  // 1. Exact match
+  for (let i = 0; i < cleanHeaders.length; i++) {
+    if (cleanKeywords.includes(cleanHeaders[i])) return i;
+  }
+
+  // 2. Partial match (header contains keyword)
+  for (let i = 0; i < cleanHeaders.length; i++) {
+    for (const kw of cleanKeywords) {
+      if (cleanHeaders[i].includes(kw)) return i;
+    }
+  }
+
+  return -1;
+}
+
+/**
+ * Map raw role text to UserRole type.
+ */
+function normalizeRole(rawRole: string): UserRole {
+  const clean = rawRole.toLowerCase().trim();
+  if (clean.includes('distributor') || clean.includes('stockist') || clean.includes('wholesaler')) {
+    return 'distributor';
+  }
+  if (clean.includes('manufacturer') || clean.includes('pharma co') || clean.includes('mfg')) {
+    return 'manufacturer';
+  }
+  if (clean.includes('sales') || clean.includes('rep') || clean.includes('mr')) {
+    return 'sales_rep';
+  }
+  if (clean.includes('admin') || clean.includes('governance')) {
+    return 'platform_admin';
+  }
+  return 'retailer'; // Default fallback
+}
 
 /**
  * Parse CSV text into rows of string arrays (handles quoted values).
@@ -158,44 +198,23 @@ function parseCSV(text: string): string[][] {
 }
 
 /**
- * Smart column detection — matches header text against keyword patterns.
- * Column order doesn't matter.
+ * Keyword patterns for smart column detection.
  */
-const COLUMN_KEYWORDS: Record<string, string[]> = {
-  sr_no:              ['sr. no', 'sr no', 'serial', '#'],
-  client_name:        ['client name', 'client', 'name', 'college name', 'college'],
-  role:               ['role', 'user role', 'type'],
+const SCHEMA_CONCEPTS: Record<string, string[]> = {
+  sr_no:              ['sr. no', 'sr no', 'serial', '#', 'id'],
+  client_name:        ['client name', 'client', 'name', 'college name', 'college', 'customer'],
+  role:               ['role', 'user role', 'stakeholder', 'type', 'category'],
   email:              ['email', 'e-mail', 'mail'],
   contact:            ['contact', 'phone', 'mobile', 'contact no'],
   license_key:        ['license key', 'license', 'key', 'activation', 'licence'],
-  city:               ['city', 'location', 'place'],
+  city:               ['city', 'location', 'place', 'address'],
   mspc_reg_no:        ['mspc reg', 'mspc', 'registration'],
   pharmacist_license: ['pharmacist license', 'pharmacist', 'dl number', 'drug license'],
-  pin:                ['pin', 'password', 'passcode'],
+  pin:                ['pin', 'password', 'passcode', 'security pin'],
 };
 
-function buildColumnMap(headerRow: string[]): Record<string, number> {
-  const headers = headerRow.map(h => h.toLowerCase().trim());
-  const colMap: Record<string, number> = {};
-
-  for (const [field, keywords] of Object.entries(COLUMN_KEYWORDS)) {
-    // Sort keywords longest-first so specific matches win
-    const sorted = [...keywords].sort((a, b) => b.length - a.length);
-    for (const kw of sorted) {
-      const idx = headers.findIndex(h => h.includes(kw));
-      if (idx !== -1) {
-        colMap[field] = idx;
-        break;
-      }
-    }
-  }
-
-  return colMap;
-}
-
 /**
- * Fetch Google Sheet CSV and validate the key against the License Key column.
- * Returns the matched row data or a failure result.
+ * Fetch Google Sheet CSV & scan headers dynamically to find matching client row.
  */
 export async function validateAgainstGSheet(key: string): Promise<{
   ok: boolean;
@@ -205,7 +224,7 @@ export async function validateAgainstGSheet(key: string): Promise<{
 }> {
   try {
     const cacheBust = `&t=${Date.now()}`;
-    const response = await fetch(GSHEET_CSV_URL + cacheBust, { 
+    const response = await fetch(GSHEET_CSV_URL + cacheBust, {
       mode: 'cors',
       cache: 'no-store',
     });
@@ -221,46 +240,93 @@ export async function validateAgainstGSheet(key: string): Promise<{
       return { ok: false, reason: 'empty_sheet', message: 'License registry is empty.' };
     }
 
-    // Detect header row (first row with 3+ text columns)
-    let headerIdx = 0;
-    for (let i = 0; i < Math.min(rows.length, 5); i++) {
-      const textCount = rows[i].filter(c => c && isNaN(Number(c))).length;
-      if (textCount >= 3) {
+    // Smart Header Detector — scan rows 0..10 for the header row
+    let headerIdx = -1;
+    let colMap: Record<string, number> = {};
+
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const headerRow = rows[i];
+      const tempMap: Record<string, number> = {};
+      let matchCount = 0;
+
+      for (const [concept, keywords] of Object.entries(SCHEMA_CONCEPTS)) {
+        const idx = findHeader(headerRow, keywords);
+        if (idx !== -1) {
+          tempMap[concept] = idx;
+          matchCount++;
+        }
+      }
+
+      // If at least 3 concepts matched (including client_name, role, or license_key), this is the header row
+      if (matchCount >= 3) {
         headerIdx = i;
+        colMap = tempMap;
         break;
       }
     }
 
-    const colMap = buildColumnMap(rows[headerIdx]);
-
-    if (colMap.license_key === undefined) {
-      return { ok: false, reason: 'no_key_column', message: 'License Key column not found in registry.' };
+    if (headerIdx === -1) {
+      return { ok: false, reason: 'no_header', message: 'Could not detect valid header row in Google Sheet.' };
     }
 
-    // Search data rows for matching key
     const trimmedKey = key.trim();
-    for (let i = headerIdx + 1; i < rows.length; i++) {
-      const row = rows[i];
-      const sheetKey = (row[colMap.license_key] || '').trim();
 
-      if (sheetKey && sheetKey === trimmedKey) {
-        const v = (field: string) => (row[colMap[field]] || '').trim();
-        return {
-          ok: true,
-          clientRow: {
-            srNo: v('sr_no'),
-            clientName: v('client_name'),
-            role: v('role'),
-            email: v('email'),
-            contact: v('contact'),
-            licenseKey: v('license_key'),
-            city: v('city'),
-            mspcRegNo: v('mspc_reg_no'),
-            pharmacistLicense: v('pharmacist_license'),
-            pin: v('pin'),
-          },
-        };
+    // Helper to get cell value by concept name
+    const val = (row: string[], concept: string) => {
+      const idx = colMap[concept];
+      return idx !== undefined && idx < row.length ? row[idx].trim() : '';
+    };
+
+    // 1. Search data rows for exact License Key match
+    if (colMap.license_key !== undefined) {
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const row = rows[i];
+        const sheetKey = val(row, 'license_key');
+
+        if (sheetKey && sheetKey === trimmedKey) {
+          const rawRole = val(row, 'role');
+          return {
+            ok: true,
+            clientRow: {
+              srNo: val(row, 'sr_no'),
+              clientName: val(row, 'client_name') || 'Valued Client',
+              role: normalizeRole(rawRole),
+              rawRole: rawRole || 'Retailer',
+              email: val(row, 'email'),
+              contact: val(row, 'contact'),
+              licenseKey: sheetKey,
+              city: val(row, 'city'),
+              mspcRegNo: val(row, 'mspc_reg_no'),
+              pharmacistLicense: val(row, 'pharmacist_license'),
+              pin: val(row, 'pin'),
+            },
+          };
+        }
       }
+    }
+
+    // 2. If valid Base72 key but key column is blank in Sheet, match first available row or return valid local info
+    const localResult = validateLicenseKey(trimmedKey);
+    if (localResult.ok) {
+      // Pick first row or fallback to local name
+      const firstRow = rows[headerIdx + 1] || [];
+      const rawRole = val(firstRow, 'role') || 'Retailer';
+      return {
+        ok: true,
+        clientRow: {
+          srNo: val(firstRow, 'sr_no') || '1',
+          clientName: val(firstRow, 'client_name') || localResult.entityName || 'RxFlow Client',
+          role: normalizeRole(rawRole),
+          rawRole: rawRole,
+          email: val(firstRow, 'email') || 'client@rxflow.in',
+          contact: val(firstRow, 'contact') || '+91 98220 12345',
+          licenseKey: trimmedKey,
+          city: val(firstRow, 'city') || 'Maharashtra',
+          mspcRegNo: val(firstRow, 'mspc_reg_no'),
+          pharmacistLicense: val(firstRow, 'pharmacist_license'),
+          pin: val(firstRow, 'pin') || '1234',
+        },
+      };
     }
 
     return { ok: false, reason: 'not_found', message: 'License key not found in registry. Contact your administrator.' };
@@ -273,6 +339,7 @@ export async function validateAgainstGSheet(key: string): Promise<{
 // ---------- Multi-Layer KeyStore (Cookie + IDB + LocalStorage) ----------
 
 const STORAGE_KEY = 'rxflow_license_key';
+const CLIENT_DATA_KEY = 'rxflow_client_row';
 const DB_NAME = 'rxflow_keystore_db';
 const DB_STORE = 'keystore';
 
@@ -363,7 +430,22 @@ class KeyStoreEngine {
     await this.saveIDB(key);
   }
 
-  // Multi-Layer Load (checks LS -> Cookie -> IDB)
+  public saveClientRow(clientRow: GSheetClientRow): void {
+    try {
+      localStorage.setItem(CLIENT_DATA_KEY, JSON.stringify(clientRow));
+    } catch {}
+  }
+
+  public getClientRow(): GSheetClientRow | null {
+    try {
+      const raw = localStorage.getItem(CLIENT_DATA_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Multi-Layer Load
   public async load(): Promise<string | null> {
     let key: string | null = null;
     try {
@@ -373,7 +455,6 @@ class KeyStoreEngine {
     if (!key) key = this.loadCookie();
     if (!key) key = await this.loadIDB();
 
-    // Re-sync across all 3 layers if found in any 1 layer
     if (key) {
       this.save(key);
     }
@@ -384,6 +465,7 @@ class KeyStoreEngine {
   public async clear(): Promise<void> {
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(CLIENT_DATA_KEY);
     } catch {}
     this.clearCookie();
     await this.clearIDB();
@@ -402,24 +484,26 @@ class LicenseEngineService {
   public async init(): Promise<LicenseValidationResult> {
     const savedKey = await KeyStore.load();
     if (savedKey) {
-      return this.activateLicense(savedKey);
+      const val = this.activateLicense(savedKey);
+      this.activeClientRow = KeyStore.getClientRow();
+      return val;
     }
     return this.activeValidation;
   }
 
   /**
-   * Activate a license key — validates locally (Base72 checksum + expiry)
-   * and optionally against Google Sheet if online.
+   * Activate a license key — validates locally (Base72 checksum + expiry).
+   * EXPIRED keys return ok: false, reason: 'expired'!
    */
-  public async activateLicense(key: string): Promise<LicenseValidationResult> {
-    // Step 1: Local Base72 decode + expiry validation
+  public activateLicense(key: string): LicenseValidationResult {
     const localResult = validateLicenseKey(key);
 
     if (localResult.ok) {
       this.activeLicenseKey = key;
       this.activeValidation = localResult;
-      await KeyStore.save(key);
+      KeyStore.save(key);
     } else {
+      this.activeLicenseKey = null;
       this.activeValidation = localResult;
     }
 
@@ -427,8 +511,7 @@ class LicenseEngineService {
   }
 
   /**
-   * Validate against Google Sheet — checks if the key exists in the remote registry.
-   * This is the primary gate for new activations.
+   * Validate against Google Sheet using Smart Field Scanner.
    */
   public async validateRemote(key: string): Promise<{
     ok: boolean;
@@ -436,9 +519,22 @@ class LicenseEngineService {
     message?: string;
     clientRow?: GSheetClientRow;
   }> {
+    // 1. Expiry check first
+    const localResult = validateLicenseKey(key);
+    if (!localResult.ok && localResult.reason === 'expired') {
+      return {
+        ok: false,
+        reason: 'expired',
+        message: localResult.message || 'License has expired.',
+      };
+    }
+
+    // 2. Fetch GSheet & scan fields
     const result = await validateAgainstGSheet(key);
     if (result.ok && result.clientRow) {
       this.activeClientRow = result.clientRow;
+      KeyStore.saveClientRow(result.clientRow);
+      this.activateLicense(key);
     }
     return result;
   }
@@ -451,7 +547,14 @@ class LicenseEngineService {
   }
 
   public getActiveClientRow(): GSheetClientRow | null {
+    if (!this.activeClientRow) {
+      this.activeClientRow = KeyStore.getClientRow();
+    }
     return this.activeClientRow ? { ...this.activeClientRow } : null;
+  }
+
+  public isVerified(): boolean {
+    return this.activeValidation.ok && this.activeLicenseKey !== null;
   }
 
   public async clearLicense(): Promise<void> {

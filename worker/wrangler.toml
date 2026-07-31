@@ -9,17 +9,3 @@ workers_dev = true
 ENVIRONMENT = "production"
 SUPABASE_URL = "https://hspvkmjpcnkqqpoksveo.supabase.co"
 MAHARASHTRA_STATE = "Maharashtra"
-
-# Cloudflare R2 Bucket (Free 10GB)
-[[r2_buckets]]
-binding = "R2_MEDIFLOW"
-bucket_name = "mediflow-assets"
-
-# Cloudflare Queues (Free)
-[[queues.producers]]
-binding = "ERP_SYNC_QUEUE"
-queue = "erp-sync-queue"
-
-[[queues.producers]]
-binding = "PUSH_NOTIFY_QUEUE"
-queue = "push-notify-queue"

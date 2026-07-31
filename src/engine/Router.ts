@@ -4,6 +4,8 @@
  * Routes: #/retailer/*, #/distributor/*, #/manufacturer/*, #/sales/*, #/admin/*
  */
 
+import { LicenseEngine } from './LicenseEngine';
+
 export type UserRole = 'retailer' | 'distributor' | 'manufacturer' | 'sales_rep' | 'platform_admin';
 
 export interface RouteConfig {
@@ -76,7 +78,8 @@ export function initRouter(): void {
   window.addEventListener('hashchange', () => handleRouteChange());
 
   if (!window.location.hash) {
-    window.location.hash = '#/login';
+    const lic = LicenseEngine.getActiveLicense();
+    window.location.hash = lic.validation.ok ? '#/login' : '#/register';
   } else {
     handleRouteChange();
   }
@@ -91,25 +94,32 @@ export function setCurrentRole(role: UserRole): void {
   navigate(`#/${role === 'sales_rep' ? 'sales' : role === 'platform_admin' ? 'admin' : role}/home`);
 }
 
-import { LicenseEngine } from './LicenseEngine';
+import LandingView from '../views/LandingView';
 
 async function handleRouteChange(): Promise<void> {
-  const hash = window.location.hash || '#/login';
+  const hash = window.location.hash || '#/register';
+
+  // If hash is landing or register, render LandingView directly
+  const container = document.getElementById('app-view');
+  if (!container) return;
+
+  if (hash === '#/register' || hash === '#/landing') {
+    state.currentPath = hash;
+    LandingView(container);
+    return;
+  }
 
   // MANDATORY APPSTART LICENSE GUARD:
-  // If license key is NOT verified, block ALL routes and force navigation to #/login
+  // If license key is NOT verified, allow only #/login or #/register
   const activeLic = LicenseEngine.getActiveLicense();
   if (!activeLic.validation.ok) {
-    if (hash !== '#/login') {
-      window.location.hash = '#/login';
+    if (hash !== '#/login' && hash !== '#/register') {
+      window.location.hash = '#/register';
       return;
     }
   }
 
   state.currentPath = hash;
-
-  const container = document.getElementById('app-view');
-  if (!container) return;
 
   if (hash === '#/login') {
     await renderLoginView(container);

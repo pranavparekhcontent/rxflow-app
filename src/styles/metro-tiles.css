@@ -1563,3 +1563,253 @@ body {
 
 .auth-modal__submit:hover { opacity: 0.9; }
 .auth-modal__submit:active { transform: scale(0.98); }
+
+/* ==========================================================================
+   LANDING PAGE & CLIENT REGISTRATION STYLES
+   ========================================================================== */
+
+.rx-landing-wrapper {
+  min-height: 100vh;
+  background: #080A10;
+  color: #E8EAF6;
+  font-family: var(--font-metro, 'Segoe UI', sans-serif);
+  padding: 24px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.rx-landing-hero {
+  width: min(1000px, 96vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #1E2235;
+}
+
+.rx-landing-hero__logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rx-landing-hero__pill {
+  font-size: 2.8rem;
+}
+
+.rx-landing-hero__subtitle {
+  font-size: 0.9rem;
+  color: #00B7C3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.rx-landing-hero__actions {
+  margin-top: 8px;
+}
+
+.rx-btn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rx-btn--primary {
+  background: linear-gradient(135deg, #0078D7, #00B7C3);
+  color: white;
+  box-shadow: 0 4px 16px rgba(0,120,215,0.3);
+}
+
+.rx-btn--primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.rx-btn--submit {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #00D4AA, #0078D7);
+  color: #080A10;
+  font-size: 0.95rem;
+  font-weight: 800;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.rx-btn--submit:hover {
+  opacity: 0.95;
+  transform: scale(0.99);
+}
+
+/* Content Grid */
+.rx-landing-content {
+  width: min(1000px, 96vw);
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .rx-landing-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rx-card {
+  background: #10131E;
+  border: 1px solid #1E2235;
+  border-radius: 16px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+}
+
+.rx-card__header {
+  border-bottom: 1px solid #1E2235;
+  padding-bottom: 12px;
+}
+
+.rx-card__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+}
+
+.rx-card__sub {
+  font-size: 0.78rem;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* Form */
+.rx-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rx-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 520px) {
+  .rx-form__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rx-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rx-form__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #AAA;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.rx-form__label .req {
+  color: #FF4D4D;
+  font-size: 0.7rem;
+}
+
+.rx-form__input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #080A10;
+  border: 1.5px solid #1E2235;
+  border-radius: 10px;
+  color: white;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.rx-form__input:focus {
+  border-color: #0078D7;
+  box-shadow: 0 0 0 3px rgba(0,120,215,0.15);
+}
+
+.rx-form__hint {
+  font-size: 0.68rem;
+  color: #666;
+}
+
+/* Steps list */
+.rx-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rx-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.rx-step__num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0,120,215,0.15);
+  border: 1.5px solid #0078D7;
+  color: #0078D7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.rx-step__body {
+  font-size: 0.8rem;
+  color: #BBB;
+  line-height: 1.5;
+}
+
+.rx-step__body strong {
+  color: white;
+  display: block;
+  font-size: 0.88rem;
+  margin-bottom: 2px;
+}
+
+.rx-features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px dashed #222;
+  padding-top: 16px;
+}
+
+.rx-feature {
+  font-size: 0.78rem;
+  color: #AAA;
+  line-height: 1.4;
+}
+

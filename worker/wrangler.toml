@@ -1,0 +1,25 @@
+name = "mediflow-api"
+main = "src/index.ts"
+compatibility_date = "2024-05-29"
+
+# Free tier settings
+workers_dev = true
+
+[vars]
+ENVIRONMENT = "production"
+SUPABASE_URL = "https://your-supabase-project.supabase.co"
+MAHARASHTRA_STATE = "Maharashtra"
+
+# Cloudflare R2 Bucket (Free 10GB)
+[[r2_buckets]]
+binding = "R2_MEDIFLOW"
+bucket_name = "mediflow-assets"
+
+# Cloudflare Queues (Free)
+[[queues.producers]]
+binding = "ERP_SYNC_QUEUE"
+queue = "erp-sync-queue"
+
+[[queues.producers]]
+binding = "PUSH_NOTIFY_QUEUE"
+queue = "push-notify-queue"

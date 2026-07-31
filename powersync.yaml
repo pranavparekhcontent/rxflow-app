@@ -1,0 +1,53 @@
+# PowerSync Sync Rules Configuration v3.0
+# Free Tier Config: Scopes sync payload per user role to stay under 500MB hosted / 2GB sync limit.
+
+bucket_definitions:
+  # ---------------------------------------------------------------------------
+  # Retailer Buckets
+  # ---------------------------------------------------------------------------
+  user_orders:
+    parameters:
+      - SELECT retailer_id FROM profiles WHERE id = request.user_id()
+    data:
+      - SELECT * FROM orders WHERE retailer_id = bucket.retailer_id AND created_at > now() - INTERVAL '30 days'
+      - SELECT * FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE retailer_id = bucket.retailer_id)
+
+  user_ledger:
+    parameters:
+      - SELECT retailer_id FROM profiles WHERE id = request.user_id()
+    data:
+      - SELECT * FROM ledgers WHERE retailer_id = bucket.retailer_id AND created_at > now() - INTERVAL '90 days'
+
+  retailer_inventory_cache:
+    parameters:
+      - SELECT retailer_id FROM profiles WHERE id = request.user_id()
+    data:
+      - SELECT * FROM retailer_inventory WHERE retailer_id = bucket.retailer_id
+
+  # ---------------------------------------------------------------------------
+  # Shared / Catalog Buckets (Global Sync for Active SKUs)
+  # ---------------------------------------------------------------------------
+  active_products:
+    data:
+      - SELECT id, sku, brand_name, generic_salt, composition, dosage_form, pack_size, mrp, ptr, nppa_ceiling_price, is_schedule_h, is_schedule_h1, is_schedule_x, search_text FROM products WHERE is_active = true
+
+  active_schemes:
+    data:
+      - SELECT * FROM schemes WHERE is_active = true AND valid_to >= CURRENT_DATE
+
+  # ---------------------------------------------------------------------------
+  # Distributor Buckets
+  # ---------------------------------------------------------------------------
+  distributor_incoming_orders:
+    parameters:
+      - SELECT distributor_id FROM profiles WHERE id = request.user_id()
+    data:
+      - SELECT * FROM orders WHERE distributor_id = bucket.distributor_id AND created_at > now() - INTERVAL '14 days'
+      - SELECT * FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE distributor_id = bucket.distributor_id)
+
+  distributor_inventory:
+    parameters:
+      - SELECT distributor_id FROM profiles WHERE id = request.user_id()
+    data:
+      - SELECT * FROM inventory WHERE distributor_id = bucket.distributor_id
+      - SELECT * FROM distributor_retailers WHERE distributor_id = bucket.distributor_id

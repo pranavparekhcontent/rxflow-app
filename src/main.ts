@@ -94,10 +94,26 @@ async function init(): Promise<void> {
   initRouter();
 }
 
+// Register Service Worker & capture PWA install prompt
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      console.log('SW registration notice:', err);
+    });
+  });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  (window as any).deferredInstallPrompt = e;
+});
+
 // Expose on window for dev console & handlers
 (window as any).RxFlow = {
   navigate,
   getCurrentRole,
+  toggleTheme,
 };
 
 document.addEventListener('DOMContentLoaded', init);
+

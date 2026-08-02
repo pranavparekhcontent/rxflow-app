@@ -13,7 +13,7 @@
 import { AuthStore } from '../engine/AuthStore';
 import { type UserRole } from '../engine/Router';
 import { NotificationEngine } from '../engine/NotificationEngine';
-import { LicenseEngine, validateLicenseKey, type GSheetClientRow } from '../engine/LicenseEngine';
+import { LicenseEngine, validateLicenseKey, cleanEntityName, type GSheetClientRow } from '../engine/LicenseEngine';
 
 export default function LoginView(container: HTMLElement): void {
   // Hide top app header & nav on login/gate screens
@@ -47,10 +47,9 @@ function renderLicenseGate(container: HTMLElement, prefillKey: string = '', erro
     <div class="as-gate-overlay">
       <div class="as-gate-card">
         <!-- Logo Area -->
-        <div class="as-gate-logo">
-          <span class="as-gate-pill">💊</span>
-          <div class="as-gate-appname">Rx<strong>Flow</strong></div>
-          <div class="as-gate-tagline">ENTER LICENSE KEY</div>
+        <div class="as-gate-logo" style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+          <img src="/rxflow-logo.png" alt="RxFlow Logo" style="height:90px; width:auto; object-fit:contain; filter:drop-shadow(0 6px 20px rgba(0,120,215,0.6));" />
+          <div class="as-gate-tagline" style="letter-spacing:1.5px; font-weight:800; color:var(--tile-cyan);">ENTER LICENSE KEY</div>
         </div>
 
         <!-- License Input Panel -->
@@ -198,7 +197,8 @@ function renderLockScreen(container: HTMLElement, clientName: string, expiryDate
 
 function renderPinLockScreen(container: HTMLElement, clientRow: GSheetClientRow | null): void {
   const activeLic = LicenseEngine.getActiveLicense();
-  const name = clientRow?.clientName || activeLic.validation.entityName || 'DEMO CLIENT';
+  const rawName = clientRow?.clientName || activeLic.validation.entityName || 'DEMO R';
+  const name = cleanEntityName(rawName);
   const role = clientRow?.role || 'retailer';
   const rawRole = clientRow?.rawRole || role.toUpperCase();
   const sheetPin = clientRow?.pin || '';
@@ -207,9 +207,9 @@ function renderPinLockScreen(container: HTMLElement, clientRow: GSheetClientRow 
     <div class="as-gate-overlay">
       <div class="as-gate-card" style="width:min(440px, 92vw);">
         <!-- Welcome Header -->
-        <div class="as-gate-logo" style="gap:4px;">
-          <span style="font-size:2.8rem;">👋</span>
-          <div class="as-gate-appname" style="font-size:1.8rem;text-align:center;">
+        <div class="as-gate-logo" style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+          <img src="/rxflow-logo.png" alt="RxFlow Logo" style="height:72px; width:auto; object-fit:contain; filter:drop-shadow(0 4px 14px rgba(0,120,215,0.5)); margin-bottom:4px;" />
+          <div class="as-gate-appname" style="font-size:1.6rem;text-align:center;">
             Welcome, <strong>${name}</strong>
           </div>
           <div style="font-size:0.75rem;color:#00B7C3;font-weight:600;letter-spacing:0.05em;margin-top:2px;">

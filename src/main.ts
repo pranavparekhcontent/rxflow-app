@@ -38,7 +38,10 @@ async function init(): Promise<void> {
       <!-- Metro Header -->
       <header class="metro-header" id="app-header">
         <div>
-          <div class="metro-title">RxFlow <strong>PWA</strong></div>
+          <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="window.location.hash='#/'">
+            <img src="/rxflow-logo.png" alt="RxFlow Logo" style="height:64px; width:auto; object-fit:contain; filter:drop-shadow(0 3px 12px rgba(0,120,215,0.5));" />
+            <span style="font-size:14px; font-weight:900; color:var(--tile-cyan); background:rgba(0,183,195,0.15); padding:3px 10px; border-radius:6px; text-transform:uppercase; letter-spacing:1px;">PWA</span>
+          </div>
           <div class="metro-subtitle" id="user-subtitle">Pharma B2B Hub • Maharashtra</div>
         </div>
         <div class="flex items-center gap-sm">
@@ -97,7 +100,9 @@ async function init(): Promise<void> {
 // Register Service Worker & capture PWA install prompt
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(err => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      reg.update();
+    }).catch(err => {
       console.log('SW registration notice:', err);
     });
   });

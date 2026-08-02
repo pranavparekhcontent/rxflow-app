@@ -44,13 +44,21 @@ export interface GSheetClientRow {
   pin: string;
 }
 
+export function cleanEntityName(raw: string): string {
+  if (!raw) return 'DEMO R';
+  let cleaned = raw.replace(/\s+/g, ' ').trim();
+  // Remove duplicated trailing word/letter tokens (e.g. "DEMO R R" -> "DEMO R")
+  cleaned = cleaned.replace(/\b(\w+)(\s+\1)+$/i, '$1').trim();
+  return cleaned || 'DEMO R';
+}
+
 function decodeName(val: bigint): string {
   let name = "";
   for (let i = 0; i < 8; i++) {
     const charIdx = Number((val >> BigInt((7 - i) * 5)) & 31n);
     name += NAME_CHARS[charIdx] || ' ';
   }
-  return name.trim();
+  return cleanEntityName(name);
 }
 
 /**
@@ -318,7 +326,7 @@ export async function validateAgainstGSheet(key: string): Promise<{
         ok: true,
         clientRow: {
           srNo: val(firstRow, 'sr_no') || '1',
-          clientName: val(firstRow, 'client_name') || localResult.entityName || 'RxFlow Client',
+          clientName: cleanEntityName(val(firstRow, 'client_name') || localResult.entityName || 'DEMO R'),
           firmName: val(firstRow, 'firm_name') || '',
           role: normalizeRole(rawRole),
           rawRole: rawRole,

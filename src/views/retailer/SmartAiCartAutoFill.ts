@@ -4,6 +4,7 @@
  */
 
 import { NotificationEngine } from '../../engine/NotificationEngine';
+import { BasketStore } from '../../store/BasketStore';
 
 export interface PredictedItem {
   sku: string;
@@ -56,18 +57,39 @@ export default function SmartAiCartAutoFill(container: HTMLElement): void {
 
     <div class="action-bar" style="margin-top:20px;">
       <button class="action-btn action-btn--success" id="btn-autofill-all">
-        ⚡ Auto-Fill All Suggested SKUs to Split Cart
+        ⚡ Auto-Fill All Suggested SKUs to Basket
       </button>
     </div>
   `;
 
   container.querySelector('#btn-autofill-all')?.addEventListener('click', () => {
-    NotificationEngine.showToast('⚡ Auto-filled 3 predicted SKUs into split cart!', 'success');
+    predictions.forEach(p => {
+      BasketStore.addItem({
+        sku: p.sku,
+        brandName: p.brandName,
+        genericSalt: 'Formulation Salt',
+        qty: p.suggestedQty,
+        ptr: p.ptr,
+      });
+    });
+    NotificationEngine.showToast('⚡ Auto-filled 3 predicted SKUs into multi-distributor basket!', 'success');
   });
 
   container.querySelectorAll('.accept-pred-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      NotificationEngine.showToast('Added predicted item to cart!', 'success');
+    btn.addEventListener('click', (e) => {
+      const sku = (e.currentTarget as HTMLElement).getAttribute('data-sku');
+      const pred = predictions.find(p => p.sku === sku);
+      if (pred) {
+        BasketStore.addItem({
+          sku: pred.sku,
+          brandName: pred.brandName,
+          genericSalt: 'Formulation Salt',
+          qty: pred.suggestedQty,
+          ptr: pred.ptr,
+        });
+        NotificationEngine.showToast(`Added ${pred.brandName} to basket!`, 'success');
+      }
     });
   });
 }
+

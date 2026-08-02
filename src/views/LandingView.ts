@@ -30,9 +30,9 @@ export default function LandingView(container: HTMLElement): void {
     <div class="rx-landing-wrapper">
       <!-- Top Hero Header -->
       <header class="rx-landing-hero">
-        <div class="rx-landing-hero__logo">
-          <span class="rx-landing-hero__pill">💊</span>
-          <div class="metro-title" style="font-size:42px;letter-spacing:-1px;color:white;">Rx<strong>Flow</strong> PWA</div>
+        <div class="rx-landing-hero__logo" style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+          <img src="/rxflow-logo.png" alt="RxFlow Logo" style="height:84px; width:auto; object-fit:contain; filter:drop-shadow(0 6px 20px rgba(0,120,215,0.6));" />
+          <span style="font-size:14px; font-weight:900; color:var(--tile-cyan); background:rgba(0,183,195,0.15); padding:4px 12px; border-radius:6px; text-transform:uppercase; letter-spacing:1px;">PHARMA B2B PWA</span>
         </div>
         <div class="rx-landing-hero__subtitle">
           Maharashtra Pharma B2B Hub · Chemist • Stockist • Manufacturer • MR Network

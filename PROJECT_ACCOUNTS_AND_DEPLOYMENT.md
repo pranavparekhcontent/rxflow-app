@@ -19,7 +19,7 @@
 ## 2. ☁️ Cloudflare Accounts & Live Deployments
 
 - **Account Email:** `pranavparekhcontent@gmail.com`
-- **Global API Key / Token:** `[CONFIGURED_IN_ENV_CF_KEY]`
+- **Global API Key / Token:** `[CLOUDFLARE_API_KEY]`
 - **Account ID:** `8d9574bee1f9b46318ae428ce5bae19e`
 - **PWA Frontend Project Name:** `rxflow-app` (Cloudflare Pages)
 - **Live PWA URL:** [https://rxflow-app.pages.dev](https://rxflow-app.pages.dev)
@@ -64,7 +64,7 @@
 
 ### Update PWA Frontend to Cloudflare Pages:
 ```cmd
-cmd /c "npm run build && set CLOUDFLARE_API_KEY=<YOUR_CF_API_KEY> && set CLOUDFLARE_EMAIL=pranavparekhcontent@gmail.com && npx wrangler pages deploy dist --project-name rxflow-app"
+cmd /c "npm run build && set CLOUDFLARE_API_KEY=[CLOUDFLARE_API_KEY] && set CLOUDFLARE_EMAIL=pranavparekhcontent@gmail.com && npx wrangler pages deploy dist --project-name rxflow-app"
 ```
 
 ### Push Code Updates to GitHub:
@@ -74,5 +74,5 @@ powershell -Command "git add .; git commit -m 'Update RxFlow'; git push origin m
 
 ### Redeploy Edge API Worker:
 ```cmd
-cmd /c "set CLOUDFLARE_API_KEY=<YOUR_CF_API_KEY> && set CLOUDFLARE_EMAIL=pranavparekhcontent@gmail.com && cd worker && npx wrangler deploy"
+cmd /c "set CLOUDFLARE_API_KEY=[CLOUDFLARE_API_KEY] && set CLOUDFLARE_EMAIL=pranavparekhcontent@gmail.com && cd worker && npx wrangler deploy"
 ```

@@ -4,6 +4,7 @@
  */
 
 import { NotificationEngine } from '../../engine/NotificationEngine';
+import { BasketStore } from '../../store/BasketStore';
 import { PRODUCTS } from '../../data/mockDataStore';
 
 export interface ParsedItem {
@@ -56,7 +57,7 @@ export default function VoiceReceiptParser(container: HTMLElement): void {
       ${parsedResults.length > 0 ? `
         <div class="section-title">Extracted Order Items (${parsedResults.length})</div>
         <div class="metro-list" style="margin-bottom:20px;">
-          ${parsedResults.map(item => `
+          ${parsedResults.map((item, idx) => `
             <div class="metro-item metro-item--green">
               <div class="item-main">
                 <div class="item-title">
@@ -67,8 +68,8 @@ export default function VoiceReceiptParser(container: HTMLElement): void {
               </div>
               <div style="display:flex;align-items:center;gap:12px;">
                 <div style="font-size:16px;font-weight:700;">Qty: ${item.qty}</div>
-                <button class="action-btn action-btn--success" style="padding:6px 12px;font-size:11px;">
-                  + Add to Cart
+                <button class="action-btn action-btn--success btn-add-voice-item" data-idx="${idx}" style="padding:6px 12px;font-size:11px;">
+                  + Add to Basket
                 </button>
               </div>
             </div>
@@ -76,7 +77,7 @@ export default function VoiceReceiptParser(container: HTMLElement): void {
         </div>
 
         <button class="action-btn action-btn--success" id="btn-add-all-parsed" style="width:100%;">
-          🛍️ Add All ${parsedResults.length} Items to Cart
+          🛍️ Add All ${parsedResults.length} Items to Basket
         </button>
       ` : ''}
     `;
@@ -101,8 +102,32 @@ export default function VoiceReceiptParser(container: HTMLElement): void {
       }
     });
 
+    container.querySelectorAll('.btn-add-voice-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt((e.currentTarget as HTMLElement).getAttribute('data-idx') || '0', 10);
+        const item = parsedResults[idx];
+        if (item) {
+          BasketStore.addItem({
+            sku: item.brandName.substring(0, 6).toUpperCase(),
+            brandName: item.brandName,
+            genericSalt: item.genericSalt,
+            qty: item.qty,
+          });
+          NotificationEngine.showToast(`Added ${item.brandName} to basket!`, 'success');
+        }
+      });
+    });
+
     container.querySelector('#btn-add-all-parsed')?.addEventListener('click', () => {
-      NotificationEngine.showToast(`Added ${parsedResults.length} items to split cart!`, 'success');
+      parsedResults.forEach(item => {
+        BasketStore.addItem({
+          sku: item.brandName.substring(0, 6).toUpperCase(),
+          brandName: item.brandName,
+          genericSalt: item.genericSalt,
+          qty: item.qty,
+        });
+      });
+      NotificationEngine.showToast(`Added ${parsedResults.length} items to multi-distributor basket!`, 'success');
       parsedResults = [];
       render();
     });

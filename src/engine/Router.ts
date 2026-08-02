@@ -33,7 +33,7 @@ const routes: RouteConfig[] = [
   // Retailer
   { path: '#/retailer/home', role: ['retailer'], title: 'Dashboard', component: () => import('../views/retailer/RetailerHome') },
   { path: '#/retailer/catalogue', role: ['retailer'], title: 'Catalogue', component: () => import('../views/retailer/CatalogueView') },
-  { path: '#/retailer/cart', role: ['retailer'], title: 'Smart Cart', component: () => import('../views/retailer/MultiCartSplitter') },
+  { path: '#/retailer/cart', role: ['retailer'], title: 'Basket', component: () => import('../views/retailer/MultiCartSplitter') },
   { path: '#/retailer/voice', role: ['retailer'], title: 'Voice / Slip AI', component: () => import('../views/retailer/VoiceReceiptParser') },
   { path: '#/retailer/orders', role: ['retailer'], title: 'Orders', component: () => import('../views/retailer/OrdersView') },
   { path: '#/retailer/grn', role: ['retailer'], title: 'GRN Delivery', component: () => import('../views/retailer/OrderDeliveryReceipt') },
@@ -141,7 +141,21 @@ async function handleRouteChange(): Promise<void> {
     return;
   }
 
-  if (!state.currentRole || !route.role.includes(state.currentRole)) {
+  // Auto-restore currentRole from localStorage or fallback to retailer
+  if (!state.currentRole) {
+    try {
+      const storedUser = localStorage.getItem('rxflow_user_data');
+      if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u && u.role) state.currentRole = u.role;
+      }
+    } catch (e) {}
+    if (!state.currentRole) {
+      state.currentRole = 'retailer';
+    }
+  }
+
+  if (!route.role.includes(state.currentRole)) {
     renderUnauthorized(container);
     return;
   }

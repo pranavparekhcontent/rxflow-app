@@ -4,6 +4,7 @@
  */
 
 import { NotificationEngine } from '../../engine/NotificationEngine';
+import { BasketStore } from '../../store/BasketStore';
 
 export interface SubstituteOption {
   brandName: string;
@@ -72,8 +73,19 @@ export function showSaltMatcherModal(saltName: string, container: HTMLElement): 
   modal.querySelectorAll('.select-sub-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const brand = (e.currentTarget as HTMLElement).getAttribute('data-brand');
-      NotificationEngine.showToast(`Selected substitute ${brand}! Added to cart.`, 'success');
+      const sub = substitutes.find(s => s.brandName === brand);
+      if (sub) {
+        BasketStore.addItem({
+          sku: sub.brandName.substring(0, 6).toUpperCase(),
+          brandName: sub.brandName,
+          genericSalt: saltName,
+          ptr: sub.ptr,
+          distributorName: sub.distributorName,
+        });
+        NotificationEngine.showToast(`Selected substitute ${brand}! Added to basket.`, 'success');
+      }
       modal.remove();
     });
   });
 }
+

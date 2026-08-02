@@ -10,9 +10,16 @@ export default function ManufacturerHome(container: HTMLElement): void {
   const currentMfg = MANUFACTURERS[0]; // Manufacturer M1
 
   container.innerHTML = `
-    <div class="sync-bar" style="margin-bottom:16px;">
-      <div class="sync-bar__dot"></div>
-      <span>Online • ${currentMfg.name} • 30 Master Brands B1-B30</span>
+    <!-- Top Header Bar with Calligraphic Logo -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; background:var(--bg-card); border:1px solid var(--border-subtle); padding:10px 16px; border-radius:4px; flex-wrap:wrap; gap:10px;">
+      <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="window.location.hash='#/manufacturer/home'">
+        <img src="/rxflow-logo.png" alt="RxFlow Logo" style="height:52px; width:auto; object-fit:contain; filter:drop-shadow(0 3px 12px rgba(0,120,215,0.5));" />
+        <span style="font-size:10px; font-weight:900; color:var(--tile-cyan); background:rgba(0,183,195,0.15); padding:2px 6px; border-radius:4px;">MANUFACTURER</span>
+      </div>
+      <div class="sync-bar" style="margin:0;">
+        <div class="sync-bar__dot"></div>
+        <span>Online • ${currentMfg.name} • 30 Master Brands B1-B30</span>
+      </div>
     </div>
 
     <div class="section-title">Manufacturer Operations (${currentMfg.name})</div>
